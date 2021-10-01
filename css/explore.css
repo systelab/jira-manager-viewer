@@ -9,14 +9,14 @@
 
 .page-shadow {
     box-shadow: 0 0 5px 2px rgba(0,0,0,.5);
-    border-left: 1px solid #222326;
+    border-left: 1px solid #EBECF0;
 }
 
 .filter-bar {
     display: -webkit-flex;
     display: -ms-flexbox;
     display: flex;
-    border-bottom: 1px solid #2a2b30;
+    border-bottom: 1px solid #EBECF0;
     padding-bottom: 10px;
     margin: 10px 15px;
 }
@@ -209,7 +209,7 @@ article, aside, details, figcaption, figure, footer, header, hgroup, main, menu,
 }
 
 .albums-page .navigation>.nav-item.active {
-    border-color: #FFD740;
+    border-color: #2583FD;
     color: #fff;
 }
 

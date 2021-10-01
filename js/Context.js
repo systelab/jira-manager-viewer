@@ -36,87 +36,10 @@ viewer.listeners = viewer.listeners || {};
             },
             enumerable: false
         },
-        getUncommittedPresenter : {
+        getSettingsInteractor : {
             value: function()
             {
-                return new viewer.presenters.UncommittedPresenter(this);
-            },
-            enumerable: false
-        },
-        getUncommittedView : {
-            value: function(presenter)
-            {
-                return new viewer.views.UncommittedView(presenter);
-            },
-            enumerable: false
-        },
-        getUncommittedInteractor : {
-            value: function()
-            {
-                return new viewer.interactors.UncommittedInteractor();
-            },
-            enumerable: false
-        },
-        getExplorePresenter : {
-            value: function()
-            {
-                return new viewer.presenters.ExplorePresenter(this);
-            },
-            enumerable: false
-        },
-        getExploreView : {
-            value: function(presenter)
-            {
-                return new viewer.views.ExploreView(presenter);
-            },
-            enumerable: false
-        },
-        getExploreInteractor : {
-            value: function()
-            {
-                return new viewer.interactors.ExploreInteractor();
-            },
-            enumerable: false
-        },
-        getUserPresenter : {
-            value: function()
-            {
-                return new viewer.presenters.UserPresenter(this);
-            },
-            enumerable: false
-        },
-        getUserView : {
-            value: function(presenter)
-            {
-                return new viewer.views.UserView(presenter);
-            },
-            enumerable: false
-        },
-        getUserInteractor : {
-            value: function()
-            {
-                return new viewer.interactors.UserInteractor();
-            },
-            enumerable: false
-        },
-        getBoardPresenter : {
-            value: function()
-            {
-                return new viewer.presenters.BoardPresenter(this);
-            },
-            enumerable: false
-        },
-        getBoardView : {
-            value: function(presenter)
-            {
-                return new viewer.views.BoardView(presenter);
-            },
-            enumerable: false
-        },
-        getBoardInteractor : {
-            value: function()
-            {
-                return new viewer.interactors.BoardInteractor();
+                return new viewer.interactors.SettingsInteractor();
             },
             enumerable: false
         },
@@ -141,94 +64,24 @@ viewer.listeners = viewer.listeners || {};
             },
             enumerable: false
         },
-        getPlayerPresenter : {
+        getBoardPresenter : {
             value: function()
             {
-                return new viewer.presenters.PlayerPresenter(this);
+                return new viewer.presenters.BoardPresenter(this);
             },
             enumerable: false
         },
-        getPlayerView : {
+        getBoardView : {
             value: function(presenter)
             {
-                return new viewer.views.PlayerView(presenter);
+                return new viewer.views.BoardView(presenter);
             },
             enumerable: false
         },
-        getPlayerInteractor : {
+        getBoardInteractor : {
             value: function()
             {
-                return new viewer.interactors.PlayerInteractor();
-            },
-            enumerable: false
-        },
-        getCommitPresenter : {
-            value: function()
-            {
-                return new viewer.presenters.CommitPresenter(this);
-            },
-            enumerable: false
-        },
-        getCommitView : {
-            value: function(presenter)
-            {
-                return new viewer.views.CommitView(presenter);
-            },
-            enumerable: false
-        },
-        getCommitInteractor : {
-            value: function()
-            {
-                return new viewer.interactors.CommitInteractor();
-            },
-            enumerable: false
-        },
-        getContextMenuPresenter : {
-            value: function()
-            {
-                return new viewer.presenters.ContextMenuPresenter(this);
-            },
-            enumerable: false
-        },
-        getContextMenuView : {
-            value: function(presenter)
-            {
-                return new viewer.views.ContextMenuView(presenter);
-            },
-            enumerable: false
-        },
-        getContextMenuInteractor : {
-            value: function()
-            {
-                return new viewer.interactors.ContextMenuInteractor();
-            },
-            enumerable: false
-        },
-        getSettingsInteractor : {
-            value: function()
-            {
-                return new viewer.interactors.SettingsInteractor();
-            },
-            enumerable: false
-        },
-        getNewTaskPresenter : {
-            value: function()
-            {
-                return new viewer.presenters.NewTaskPresenter(this);
-            },
-            enumerable: false
-        },
-        getNewTaskView : {
-            value: function(presenter)
-            {
-                return new viewer.views.NewTaskView(presenter);
-            },
-            enumerable: false
-        },
-        getNewTaskInteractor : {
-            value: function()
-            {
-                return new viewer.interactors.NewTaskInteractor();
+                return new viewer.interactors.BoardInteractor();
             },
             enumerable: false
         },
@@ -252,6 +105,48 @@ viewer.listeners = viewer.listeners || {};
                 return new viewer.interactors.SetupInteractor();
             },
             enumerable: false
+        },
+        getBurndownPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.BurndownPresenter(this);
+            },
+            enumerable: false
+        },
+        getBurndownView : {
+            value: function(presenter)
+            {
+                return new viewer.views.BurndownView(presenter);
+            },
+            enumerable: false
+        },
+        getBurndownInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.BurndownInteractor();
+            },
+            enumerable: false
+        },
+        getPlanningPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.PlanningPresenter(this);
+            },
+            enumerable: false
+        },
+        getPlanningView : {
+            value: function(presenter)
+            {
+                return new viewer.views.PlanningView(presenter);
+            },
+            enumerable: false
+        },
+        getPlanningInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.PlanningInteractor();
+            },
+            enumerable: false
         }
     });
 
@@ -262,17 +157,11 @@ viewer.listeners = viewer.listeners || {};
 {
     var list =  {
                     login : "getLoginPresenter",
-                    sprint: "getSprintPresenter",
-                    uncommitted: "getUncommittedPresenter",
-                    explore: "getExplorePresenter",
-                    user: "getUserPresenter",
-                    board: "getBoardPresenter",
                     user_story: "getUserStoryPresenter",
-                    player: "getPlayerPresenter",
-                    commit: "getCommitPresenter",
-                    context_menu: "getContextMenuPresenter",
-                    new_task: "getNewTaskPresenter",
-                    setup: "getSetupPresenter"
+                    board: "getBoardPresenter",
+                    setup: "getSetupPresenter",
+                    burndown: "getBurndownPresenter",
+                    planning: "getPlanningPresenter",
                 };
 
     function Initializer()

@@ -2,7 +2,7 @@ html, body
 {
     font-family: 'Roboto', 'Helvetica', sans-serif !important;
     background-color: #19191B;
-    color:#cbcbcc;
+    color:#000;
     height: 100%;
     width: 100%;
     overflow: hidden;
@@ -110,7 +110,7 @@ img, legend
 
 .mdl-snackbar__action
 {
-    color: rgb(255,215,64)!important;
+    color: rgb(37,131,253)!important;
 }
 
 #upgrade

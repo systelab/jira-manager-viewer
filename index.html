@@ -28,38 +28,23 @@
         <script src="js/login/LoginView.js"></script>
         <script src="js/login/LoginInteractor.js"></script>
         <script src="js/login/LoginPresenter.js"></script>
-        <script src="js/uncommitted/UncommittedView.js"></script>
-        <script src="js/uncommitted/UncommittedInteractor.js"></script>
-        <script src="js/uncommitted/UncommittedPresenter.js"></script>
-        <script src="js/explore/ExploreView.js"></script>
-        <script src="js/explore/ExploreInteractor.js"></script>
-        <script src="js/explore/ExplorePresenter.js"></script>
-        <script src="js/user/UserView.js"></script>
-        <script src="js/user/UserInteractor.js"></script>
-        <script src="js/user/UserPresenter.js"></script>
-        <script src="js/board/BoardView.js"></script>
-        <script src="js/board/BoardInteractor.js"></script>
-        <script src="js/board/BoardPresenter.js"></script>
         <script src="js/user_story/UserStoryView.js"></script>
         <script src="js/user_story/UserStoryInteractor.js"></script>
         <script src="js/user_story/UserStoryPresenter.js"></script>
-        <script src="js/player/PlayerView.js"></script>
-        <script src="js/player/PlayerInteractor.js"></script>
-        <script src="js/player/PlayerPresenter.js"></script>
-        <script src="js/commit/CommitView.js"></script>
-        <script src="js/commit/CommitInteractor.js"></script>
-        <script src="js/commit/CommitPresenter.js"></script>
-        <script src="js/context_menu/ContextMenuView.js"></script>
-        <script src="js/context_menu/ContextMenuInteractor.js"></script>
-        <script src="js/context_menu/ContextMenuPresenter.js"></script>
         <script src="js/settings/SettingsInteractor.js"></script>
-        <script src="js/new_task/NewTaskView.js"></script>
-        <script src="js/new_task/NewTaskInteractor.js"></script>
-        <script src="js/new_task/NewTaskPresenter.js"></script>
+        <script src="js/board/BoardView.js"></script>
+        <script src="js/board/BoardInteractor.js"></script>
+        <script src="js/board/BoardPresenter.js"></script>
         <script src="js/setup/SetupView.js"></script>
         <script src="js/setup/SetupInteractor.js"></script>
         <script src="js/setup/SetupPresenter.js"></script>
-        <title>Jirafy</title>
+        <script src="js/burndown/BurndownView.js"></script>
+        <script src="js/burndown/BurndownInteractor.js"></script>
+        <script src="js/burndown/BurndownPresenter.js"></script>
+        <script src="js/planning/PlanningView.js"></script>
+        <script src="js/planning/PlanningInteractor.js"></script>
+        <script src="js/planning/PlanningPresenter.js"></script>
+        <title>Jira Manager</title>
     </head>
     <body>
         <div class="app-container visible hidden">
@@ -69,9 +54,6 @@
                         <div class="content">
                             <div class="main-menu"></div>
                             <div class="divider"></div>
-                            <div class="current-user-widget menu-item">
-                                
-                            </div>
                             <div class="your-music">
                                 <h2>Your sprint</h2>
                                 <div class="your-music-list"></div>
@@ -83,10 +65,6 @@
                                     <div class="playlists-list"></div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="new-playlist">
-                            <i class="icon icon-plus"></i>
-                            <div class="text">New Task</div>
                         </div>
                         <div class="current-track hidden">
                             <img src="">
@@ -110,15 +88,11 @@
                     <div class="context-menu hidden"></div>
                 </div>
             </div>
-            <div class="player-controls" style="touch-action: pan-y; user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);">
-                
-            </div>
         </div>
         <div id="login">
             <dialog class="mdl-dialog">
                 <h4 class="mdl-dialog__title">
-                    <img class="logo" src="img/giraffe.svg"/>
-                    <canvas class="canvas"></canvas>
+                    <img class="logo" src="img/logo.png"/>
                 </h4>
                 <form action="#">
                   <div class="mdl-dialog__content">
@@ -167,6 +141,8 @@
         initializeConfig.push("commit");
         initializeConfig.push("context_menu");
         initializeConfig.push("new_task");
+        initializeConfig.push("burndown");
+        initializeConfig.push("planning");
         
         (function()
         {

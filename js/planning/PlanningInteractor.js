@@ -1,11 +1,11 @@
 (function(interactors)
 {
-    function ExploreInteractor()
+    function PlanningInteractor()
     {
         
     }
 
-    Object.defineProperties(ExploreInteractor.prototype,
+    Object.defineProperties(PlanningInteractor.prototype,
     {
         getIssue : {
             value: function(key, listener)
@@ -47,7 +47,7 @@
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/api/2/search/?jql=parent in (" + issues.toString() + ")+order+by+updated&fields=assignee,status,summary,issuetype&maxResults=" + pagination + "&startAt=" + startAt,
+					url: credentials.server + "/rest/api/2/search/?jql=parent in (" + issues.toString() + ")+order+by+updated&fields=assignee,status,parent,summary,issuetype,timetracking&maxResults=" + pagination + "&startAt=" + startAt,
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
@@ -74,5 +74,5 @@
         }
     });
 
-    interactors.ExploreInteractor = ExploreInteractor;
+    interactors.PlanningInteractor = PlanningInteractor;
 })(viewer.interactors);

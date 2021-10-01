@@ -9,14 +9,14 @@
 .page-shadow 
 {
     box-shadow: 0 0 5px 2px rgba(0,0,0,.5);
-    border-left: 1px solid #222326;
+    border-left: 1px solid #EBECF0;
 }
 
 .playlist-page .playlist-header 
 {
     display: flex;
     margin-bottom: 20px;
-    border-bottom: 1px solid #2a2b30;
+    border-bottom: 1px solid #EBECF0;
     padding: 0 25px 10px 25px;
 }
 
@@ -71,7 +71,7 @@
 .flex-table-header 
 {
     font-weight: 500;
-    background-color: #232326;
+    background-color: #F4F5F7;
     text-transform: uppercase;
 }
 
@@ -214,7 +214,7 @@
     word-break: break-all;
     word-break: break-word;
     padding: .5em;
-    border: 1px solid #2a2b30;
+    border: 1px solid #EBECF0;
 }
 
 .album-table .track-name 
@@ -308,16 +308,16 @@
 }
 
 .flex-table-row:hover{
-    background-color:#1e1e20
+    background-color:#EBECF0;
 }
 
 .flex-table-row.selected{
-    background-color:#333333
+    background-color:#333333;
 }
 
 .album-table .playing{
     color:#78b806;
-    background-color:#252528
+    background-color:#252528;
 }
 .album-table .playing .album-name,.album-table .playing .artists>.artist,.album-table .playing .track-duration{
     color:#78b806

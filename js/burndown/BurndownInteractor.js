@@ -1,59 +1,21 @@
 (function(interactors)
 {
-    function BoardInteractor()
+    function BurndownInteractor()
     {
         
     }
 
-    Object.defineProperties(BoardInteractor.prototype,
+    Object.defineProperties(BurndownInteractor.prototype,
     {
-        getIssueTypes : {
-            value: function(listener)
+        getIssue : {
+            value: function(key, listener)
             {
 				$.ajax
 				({
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/api/2/issuetype",
-                    beforeSend: function(xhr) { 
-						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
-                        $.xhrPool.push(xhr);
-					},
-					success: function (json)
-					{
-                        var issuetypes = [];
-                        
-						$.each(json, function()
-                        {
-                            if(!this.subtask)
-                            {
-                                issuetypes.push(this.id);
-                            }
-                        });
-                        
-                        listener.onSuccess(issuetypes);
-					},
-					error: function (jqxhr, textStatus, error)
-					{
-						if(textStatus != "abort")
-                        {
-                            listener.onError(jqxhr.responseJSON);
-                        }
-					}
-				});
-            },
-            enumerable: false
-        },
-        getBoards : {
-            value: function(listener)
-            {
-				$.ajax
-				({
-					type: "GET",
-                    dataType: 'json',
-                    contentType: 'application/json',
-					url: credentials.server + "/rest/agile/1.0/board",
+					url: credentials.server + "/rest/api/2/issue/" + key + "?fields=subtasks&expand=changelog",
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
@@ -73,18 +35,57 @@
             },
             enumerable: false
         },
-        getSprint : {
-            value: function(board, listener)
+        getIssues : {
+            value: function(issues, listener, startAt = 0)
             {
-				$.ajax
+                var self = this;
+                
+                var pagination = 1000;
+                
+                $.ajax
 				({
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/agile/1.0/board/" + board + "/sprint?maxResults=1000&state=active",
+					url: credentials.server + "/rest/api/2/search/?jql=parent in (" + issues.toString() + ")+order+by+updated&fields=assignee,status,parent,summary,issuetype,timetracking&maxResults=" + pagination + "&startAt=" + startAt+"&expand=changelog",
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
+					},
+					success: function (json)
+					{
+                        listener.onSuccess(json);
+                        
+                        if(json.startAt + pagination <= json.total)
+                        {
+                            self.getIssues(issues, listener, json.startAt + pagination);
+                        }
+					},
+					error: function (jqxhr, textStatus, error)
+					{
+						if(textStatus != "abort")
+                        {
+                            listener.onError(jqxhr.responseJSON);
+                        }
+					}
+				});
+            },
+            enumerable: false
+        },
+        getWorklogList : {
+            value: function(ids, listener)
+            {
+				$.ajax
+				({
+					type: "POST",
+                    crossDomain: true,
+                    dataType: 'json',
+                    data: JSON.stringify({"ids":ids}),
+                    contentType: 'application/json',
+					url: credentials.server + "/rest/api/2/worklog/list",
+                    beforeSend: function(xhr) { 
+						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
+                        xhr.setRequestHeader("Content-Type", "application/json;odata=verbose");
 					},
 					success: function (json)
 					{
@@ -101,17 +102,16 @@
             },
             enumerable: false
         },
-        getIssues : {
-            value: function(board, sprint, issuetypes, listener)
+        getWorklogModified : {
+            value: function(beginDate, endDate, listener)
             {
-                var jql = "issuetype in (" + issuetypes.toString() + ")";
-                
+                var self = this;
 				$.ajax
 				({
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/agile/1.0/board/" + board + "/sprint/" + sprint + "/issue?maxResults=1000&jql=" + jql,
+					url: credentials.server + "/rest/api/2/worklog/updated?since=" + beginDate + "&until=" + endDate,
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
@@ -119,6 +119,11 @@
 					success: function (json)
 					{
 						listener.onSuccess(json);
+                        
+                        if(!json.lastPage)
+                        {
+                            self.getWorklogPage(json.nextPage, listener);
+                        }
 					},
 					error: function (jqxhr, textStatus, error)
 					{
@@ -130,8 +135,8 @@
 				});
             },
             enumerable: false
-        }
+        },
     });
 
-    interactors.BoardInteractor = BoardInteractor;
+    interactors.BurndownInteractor = BurndownInteractor;
 })(viewer.interactors);

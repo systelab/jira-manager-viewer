@@ -6,7 +6,7 @@
 .app-container a 
 {
     text-decoration: none;
-    color: #FFD740;
+    color: #2583FD;
     background-color: transparent;
 }
 
@@ -15,7 +15,7 @@
     display: none;
     flex-direction: column;
     height: 100%;
-    color: #cbcbcc;
+    color: #515F78;
 }
 
 .app-container.visible 
@@ -30,7 +30,7 @@
 
 .page-container
 {
-    height: calc(100% - 50px);
+    height: 100%;
     display: flex;
     position: relative;
 }
@@ -62,7 +62,7 @@
 
 .left-panel, .search-panel > .result-container > .media:hover
 {
-    background-color: #252528;
+    background-color: #F4F5F7;
 }
 
 .left-panel .left-panel-inner
@@ -77,7 +77,7 @@
     align-items: center;
     padding-top: 15px;
     position: relative;
-    height: calc(100% - 66px);
+    height: 100%;
 }
 
 .left-panel .main-menu, .left-panel .playlists, .left-panel .your-music
@@ -104,21 +104,21 @@
 
 .left-panel .main-menu .menu-item.active, .left-panel .playlists .menu-item.active, .left-panel .your-music .menu-item.active 
 {
-    background-color: #323235;
-    border-color: #FFD740;
+    background-color: #E2E4E9;
+    border-color: #2583FD;
 }
 
 .left-panel .main-menu .menu-item:hover, .left-panel .playlists .menu-item:hover, .left-panel .search-bar, .left-panel .your-music .menu-item:hover
 {
-    background-color:#323235
+    background-color:#EBECF0
 }
 
 .left-panel .content .divider 
 {
-    height: 1px;
+    height: 2px;
     width: calc(100% - 30px);
     box-sizing: border-box;
-    background-color: #2f2f33;
+    background-color: #EBECF0;
     margin-top: 25px;
     flex: 0 0 auto;
 }
@@ -213,7 +213,7 @@
     flex: 1 1 auto;
     height: 100%;
     position: relative;
-    background-color: #19191B;
+    background-color: #fff;
 }
 
 .main-view
@@ -296,7 +296,7 @@
 
 a.btn.primary, button.primary 
 {
-    background-color: #FFD740 !important;
+    background-color: #2583FD !important;
     color: #000 !important;
     box-shadow: 0 2px 5px 0 rgba(0,0,0,.26);
     border: none;
@@ -304,13 +304,13 @@ a.btn.primary, button.primary
 
 .mdl-button.mdl-color--primary
 {
-    color: #000 !important;
+    color: rgba(255, 255, 255, 122) !important;
 }
 
 a.btn, button 
 {
     color: #cbcbcc;
-    background-color: #232326;
+    background-color: #F4F5F7;
     padding: 8px 1pc;
     border: 1px solid #42444b;
     border-radius: 3px;
