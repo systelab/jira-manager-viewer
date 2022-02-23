@@ -29,14 +29,19 @@
             enumerable: false
         },
         getBoards : {
-            value: function()
+            value: function(startAt = 0)
             {
                 var self = this;
                     
-                this.interactor.getBoards(new viewer.listeners.BaseDecisionListener(
+                this.interactor.getBoards(startAt, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
                         self.view.load(data);
+						
+						if(!data.isLast)
+                        {
+                            self.getBoards(startAt + data.values.length);
+                        }
                     },
                     function(data)
                     {
@@ -53,24 +58,15 @@
                 this.interactor.getSprint(board, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
+						$.each(data.values, function()
+						{
+							if(this.originBoardId == undefined)
+							{
+								this.originBoardId = board;
+							}
+						});
+						
                         self.view.onSprint(data);
-                    },
-                    function(data)
-                    {
-                        self.view.showError(data);
-                    }));
-            },
-            enumerable: false
-        },
-        getIssues : {
-            value: function(board, sprint, issuetypes)
-            {
-                var self = this;
-                
-                this.interactor.getIssues(board, sprint, issuetypes, new viewer.listeners.BaseDecisionListener(
-                    function(data)
-                    {
-                        self.view.onIssues(data);
                     },
                     function(data)
                     {

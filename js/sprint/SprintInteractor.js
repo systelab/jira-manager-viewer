@@ -1,13 +1,13 @@
 (function(interactors)
 {
-    function BoardInteractor()
+    function SprintInteractor()
     {
         
     }
 
-    Object.defineProperties(BoardInteractor.prototype,
+    Object.defineProperties(SprintInteractor.prototype,
     {
-        getIssueTypes : {
+		getIssueTypes : {
             value: function(listener)
             {
 				$.ajax
@@ -45,15 +45,15 @@
             },
             enumerable: false
         },
-        getBoards : {
-            value: function(startAt, listener)
+        getSprints : {
+            value: function(board, startAt, listener)
             {
 				$.ajax
 				({
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/agile/1.0/board?startAt=" + startAt,
+					url: credentials.server + "/rest/agile/1.0/board/" + board + "/sprint?startAt=" + startAt,
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
@@ -65,34 +65,6 @@
 					error: function (jqxhr, textStatus, error)
 					{
                         if(textStatus != "abort")
-                        {
-                            listener.onError(jqxhr.responseJSON);
-                        }
-					}
-				});
-            },
-            enumerable: false
-        },
-        getSprint : {
-            value: function(board, listener)
-            {
-				$.ajax
-				({
-					type: "GET",
-                    dataType: 'json',
-                    contentType: 'application/json',
-					url: credentials.server + "/rest/agile/1.0/board/" + board + "/sprint?maxResults=1000&state=active",
-                    beforeSend: function(xhr) { 
-						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
-                        $.xhrPool.push(xhr);
-					},
-					success: function (json)
-					{
-						listener.onSuccess(json);
-					},
-					error: function (jqxhr, textStatus, error)
-					{
-						if(textStatus != "abort")
                         {
                             listener.onError(jqxhr.responseJSON);
                         }
@@ -133,5 +105,5 @@
         }
     });
 
-    interactors.BoardInteractor = BoardInteractor;
+    interactors.SprintInteractor = SprintInteractor;
 })(viewer.interactors);

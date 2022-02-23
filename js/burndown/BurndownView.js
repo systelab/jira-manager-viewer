@@ -82,8 +82,6 @@
                         
                         if(index > -1)
                         {
-                            console.log(this.items);
-                            
                             $.each(this.items, function(j)
                             {
                                 if(this.field == "timeestimate")
@@ -221,8 +219,6 @@
                 {
                     
                 });
-                
-                //console.log(data);
                 
                 self.getIssues();
             },

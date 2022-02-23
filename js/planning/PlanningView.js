@@ -144,7 +144,6 @@
                             $("<td/>", {html: ""}).appendTo(row);
                             $("<td/>", {html: this.fields.customfield_10003}).appendTo(row);
                             row.appendTo(table);
-                            console.log(this)
                         });
                         
                         return false;

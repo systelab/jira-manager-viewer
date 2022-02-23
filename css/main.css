@@ -263,19 +263,19 @@
     color: #cbcbcc;
 }
 
-.playlists h2 .title
+.playlists h2 .title, .your-music h2 .title
 {
     float: left;
 }
 
-.playlists h2 i
+.playlists h2 i, .your-music h2 i
 {
     margin-top: 2px;
     float: right;
     cursor:pointer;
 }
 
-.playlists h2 ul
+.playlists h2 ul, .your-music h2 ul
 {
     position: absolute;
     z-index: 9999;

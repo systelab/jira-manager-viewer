@@ -24,71 +24,33 @@
         load : {
             value: function(data)
             {
-                var self = this;
-                
-                $(".modal-dialog").load("js/board/template.html", function()
-                {
-                    self.template = $(this);
+				var self = this;
+				
+				var boards = this.template.find(".body");
                     
-                    var board = self.template.find(".body li").detach();
-                    
-                    self.dialog = $(this).find(".board-dialog");
-                    
-                    self.dialog.find(".mdl-button.close").click(function()
-                    {
-                        self.dialog[0].close();
-                    });
-                   
-                    var boards = self.template.find(".body");
-                    
-                    $.each(data.values, function()
-                    {
-                        var clone = board.clone();
-                        clone.html(this.name);
-                        
-                        var id = this.id;
-                        var name = this.name;
-                        
-                        clone.click(function()
-                        {
-                            self.presenter.setSetting("board", {id: id, name: name});
-                        }).appendTo(boards);
-                    });
-                    
-                    self.dialog[0].showModal();
-                });
+				$.each(data.values, function()
+				{
+					var clone = self.boardTemplate.clone();
+					clone.html(this.name);
+					
+					var id = this.id;
+					var name = this.name;
+					
+					clone.click(function()
+					{
+						self.presenter.setSetting("board", {id: id, name: name});
+					}).appendTo(boards);
+				});
             },
             enumerable: false
         },
         onSprint : {
             value: function(data)
             {
-                var self = this;
-                
-                $.each(data.values, function()
-                {
-                    self.presenter.getIssues(this.originBoardId, this.id, self.issueTypes);
-                });
-            },
-            enumerable: false
-        },
-        onIssues : {
-            value: function(data)
-            {
-                $.each(data.issues, function()
-                {
-                    var us = $("<div/>", {class: "menu-item", "us-id": this.key, html: "<i><img src='" + this.fields.issuetype.iconUrl + "'></i> " + this.fields.summary}).appendTo($(".playlists-list"));
-                
-                    us.click(function()
-                    {
-                        $.xhrPool.abortAll();
-                        
-                        $(".menu-item").removeClass("active");
-                        $(this).addClass("active");
-                    }) 
-                });
-                
-                $(".playlists-list").trigger("loaded", data);
+                if(data.values.length > 0)
+				{
+					$(document).trigger("active_sprint", {id: data.values[0].id, name: data.values[0].name});
+				}
             },
             enumerable: false
         },
@@ -97,17 +59,47 @@
             {
                 var self = this;
                 
-                $(".playlists > h2").html("");
+                $(".your-music > h2").html("");
                 
                 $("<i/>", {class: "iconMenu fas fa-exchange-alt"}).click(function()
                 {
-                   self.presenter.getBoards();
-                }).appendTo($(".playlists > h2"));
+                   self.getBoards();
+                }).appendTo($(".your-music > h2"));
                 
-                $("<div/>", {class: "title", html: name}).appendTo($(".playlists > h2"));
-                $(".playlists-list").html("");
+                $("<div/>", {class: "title", html: name}).appendTo($(".your-music > h2"));
+                $(".your-music-list").html("");
                 
+				$(".main-view").html("");
+				$(".menu-item").removeClass("active");
+				
+				$(document).trigger("board", {id: id, name: name});
+				
                 this.presenter.getSprint(id);
+            },
+            enumerable: false
+        },
+		getBoards : {
+            value: function()
+            {
+				var self = this;
+				
+                $(".modal-dialog").load("js/board/template.html", function()
+                {
+                    self.template = $(this);
+                    
+                    self.boardTemplate = self.template.find(".body li").detach();
+                    
+                    self.dialog = $(this).find(".board-dialog");
+                    
+                    self.dialog.find(".mdl-button.close").click(function()
+                    {
+                        self.dialog[0].close();
+                    });
+                   
+                    self.dialog[0].showModal();
+					
+					self.presenter.getBoards();
+                });
             },
             enumerable: false
         },
@@ -120,7 +112,7 @@
                 }
                 else
                 {
-                    this.presenter.getBoards();
+                    this.getBoards();
                 }
             },
             enumerable: false

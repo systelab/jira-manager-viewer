@@ -147,6 +147,48 @@ viewer.listeners = viewer.listeners || {};
                 return new viewer.interactors.PlanningInteractor();
             },
             enumerable: false
+        },
+        getOffsprintPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.OffsprintPresenter(this);
+            },
+            enumerable: false
+        },
+        getOffsprintView : {
+            value: function(presenter)
+            {
+                return new viewer.views.OffsprintView(presenter);
+            },
+            enumerable: false
+        },
+        getOffsprintInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.OffsprintInteractor();
+            },
+            enumerable: false
+        },
+        getSprintPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.SprintPresenter(this);
+            },
+            enumerable: false
+        },
+        getSprintView : {
+            value: function(presenter)
+            {
+                return new viewer.views.SprintView(presenter);
+            },
+            enumerable: false
+        },
+        getSprintInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.SprintInteractor();
+            },
+            enumerable: false
         }
     });
 
@@ -162,6 +204,8 @@ viewer.listeners = viewer.listeners || {};
                     setup: "getSetupPresenter",
                     burndown: "getBurndownPresenter",
                     planning: "getPlanningPresenter",
+                    offsprint: "getOffsprintPresenter",
+                    sprint: "getSprintPresenter",
                 };
 
     function Initializer()

@@ -18,10 +18,12 @@
         <link rel="stylesheet" href="css/uncommitted.css">
         <link rel="stylesheet" href="css/new-task.css">
         <link rel="stylesheet" href="css/setup.css">
+        <link rel="stylesheet" href="css/offsprint.css">
         <script src="lib/jquery/jquery.min.js"></script>
         <script src="lib/mdl/material.min.js"></script>
         <script src="lib/moment.min.js"></script>
         <script src="lib/hls.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.6.0/dist/chart.min.js"></script>
         <script src="js/Context.js"></script>
         <script src="js/helpers/Utils.js"></script>
         <script src="js/helpers/BaseDecisionListener.js"></script>
@@ -44,6 +46,12 @@
         <script src="js/planning/PlanningView.js"></script>
         <script src="js/planning/PlanningInteractor.js"></script>
         <script src="js/planning/PlanningPresenter.js"></script>
+        <script src="js/offsprint/OffsprintView.js"></script>
+        <script src="js/offsprint/OffsprintInteractor.js"></script>
+        <script src="js/offsprint/OffsprintPresenter.js"></script>
+		<script src="js/sprint/SprintView.js"></script>
+        <script src="js/sprint/SprintInteractor.js"></script>
+        <script src="js/sprint/SprintPresenter.js"></script>
         <title>Jira Manager</title>
     </head>
     <body>
@@ -128,7 +136,9 @@
     </body>
     <script>
         var credentials = {server: "", user: "", password: ""};
-                                
+        
+		var myself = undefined;
+		
         var initializeConfig = initializeConfig || [];
         initializeConfig.push("login");
         initializeConfig.push("setup");
@@ -143,6 +153,8 @@
         initializeConfig.push("new_task");
         initializeConfig.push("burndown");
         initializeConfig.push("planning");
+        initializeConfig.push("offsprint");
+        initializeConfig.push("sprint");
         
         (function()
         {

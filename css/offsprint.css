@@ -1,0 +1,29 @@
+.offsprint-table-container
+{
+    height: calc(100% - 68px);
+    overflow-y: auto;
+}
+
+.offsprint-table-container #hoursChart, .offsprint-table-container #results
+{
+	float:left;
+	width: 50%;
+	margin: 20px;
+}
+
+.offsprint-table-container #peopleChart, .offsprint-table-container #people
+{
+	float:left;
+	width: 50%;
+	margin: 20px;
+}
+
+#hoursChartContainer, #peopleChartContainer
+{
+	height: 50%;
+}
+
+#people td, #hoursResult td
+{
+	padding: 5px;
+}
