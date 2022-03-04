@@ -1,6 +1,8 @@
 (function(views)
 {
-    var self;
+    var offsprints = {};
+	
+	var self;
 
     function OffsprintView(presenter)
     {
@@ -50,6 +52,11 @@
 										self.presenter.getIssue(this.key);
 									});
 								}
+							});
+							
+							$(".playlist-header #save").click(function ()
+							{
+								self.presenter.save(offsprints);
 							});
 						});
                     });
@@ -126,13 +133,6 @@
             },
             enumerable: false
         },
-        onSprint: {
-            value: function(data)
-            {
-                
-            },
-            enumerable: false
-        },
         onIssue : {
             value: function(data)
             {
@@ -141,6 +141,18 @@
                 var timespent = data.fields.timespent / 60 / 60;
 
 				{
+					if(offsprints[this.sprint.name] == undefined)
+					{
+						offsprints[this.sprint.name] = {};
+					}
+					
+					if(offsprints[this.sprint.name][value] == undefined)
+					{
+						offsprints[this.sprint.name][value] = 0;
+					}
+					
+					offsprints[this.sprint.name][value] += timespent;
+					
 					const chartdata = this.hoursChart.data;
 					
 					var labelIndex = -1;
@@ -328,7 +340,14 @@
             },
             enumerable: false
         },
-        showError : {
+        onSave : {
+            value: function(data)
+            {
+                alert("saved");
+            },
+            enumerable: false
+        },
+		showError : {
             value: function(data)
             {
                 showError(data);
@@ -338,7 +357,7 @@
         formatSeconds : {
             value: function(seconds)
             {
-                return (parseInt(seconds) / 60 / 60).toFixed(2);
+                return Math.ceil(parseInt(seconds) / 60 / 60);
             },
             enumerable: false
         }

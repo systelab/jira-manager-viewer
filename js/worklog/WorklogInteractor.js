@@ -1,11 +1,11 @@
 (function(interactors)
 {
-    function OffsprintInteractor()
+    function WorklogInteractor()
     {
         
     }
 
-    Object.defineProperties(OffsprintInteractor.prototype,
+    Object.defineProperties(WorklogInteractor.prototype,
     {
         getIssue : {
             value: function(key, listener)
@@ -36,18 +36,18 @@
             enumerable: false
         },
         getIssues : {
-            value: function(issues, listener, startAt = 0)
+            value: function(issues, projects, listener, startAt = 0)
             {
                 var self = this;
                 
-                var pagination = 1000;
+                var pagination = 100;
                 
                 $.ajax
 				({
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/api/2/search/?jql=parent in (" + issues.toString() + ")+order+by+updated&fields=assignee,status,parent,summary,issuetype,timetracking&maxResults=" + pagination + "&startAt=" + startAt,
+					url: credentials.server + "/rest/api/2/search/?jql=project in (" + projects.toString() + ") and id in (" + issues.toString() + ")+order+by+updated&fields=project&maxResults=" + pagination + "&startAt=" + startAt,
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
@@ -58,8 +58,38 @@
                         
                         if(json.startAt + pagination <= json.total)
                         {
-                            self.getIssues(issues, listener, json.startAt + pagination);
+                            self.getIssues(issues, projects, listener, json.startAt + pagination);
                         }
+					},
+					error: function (jqxhr, textStatus, error)
+					{
+						if(textStatus != "abort")
+                        {
+                            listener.onError(jqxhr, textStatus, error);
+                        }
+					}
+				});
+            },
+            enumerable: false
+        },
+        getWorklog : {
+            value: function(fromRaw, toRaw, listener)
+            {
+                var self = this;
+				
+				$.ajax
+				({
+					type: "GET",
+                    dataType: 'json',
+                    contentType: 'application/json',
+					url: credentials.server + "/rest/api/2/worklog/updated?since=" + fromRaw + "&until=" + toRaw,
+                    beforeSend: function(xhr) { 
+						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
+                        $.xhrPool.push(xhr);
+					},
+					success: function (json)
+					{
+                        listener.onSuccess(json);
 					},
 					error: function (jqxhr, textStatus, error)
 					{
@@ -72,23 +102,26 @@
             },
             enumerable: false
         },
-        save : {
-            value: function(data, listener)
+        getWorklogList : {
+            value: function(ids, listener)
             {
+                var self = this;
+				
 				$.ajax
 				({
 					type: "POST",
-					url: "/data/offsprints.json",
-					data: JSON.stringify(data),
-					dataType: 'json',
+                    dataType: 'json',
                     contentType: 'application/json',
-                    beforeSend: function(xhr)
-                    {
-                        
+					url: credentials.server + "/rest/api/2/worklog/list",
+					data: JSON.stringify({"ids":ids}),
+                    beforeSend: function(xhr) { 
+						xhr.setRequestHeader("Content-Type", "application/json;odata=verbose"); 
+						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
+                        $.xhrPool.push(xhr);
 					},
 					success: function (json)
 					{
-						listener.onSuccess(json);
+                        listener.onSuccess(json);
 					},
 					error: function (jqxhr, textStatus, error)
 					{
@@ -103,5 +136,5 @@
         }
     });
 
-    interactors.OffsprintInteractor = OffsprintInteractor;
+    interactors.WorklogInteractor = WorklogInteractor;
 })(viewer.interactors);

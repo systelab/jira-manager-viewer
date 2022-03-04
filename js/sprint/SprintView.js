@@ -58,7 +58,7 @@
 					{
 						self.changeSprint(id, name);
 						self.dialog[0].close();
-					}).appendTo(boards);
+					}).prependTo(boards);
 				});
             },
             enumerable: false

@@ -98,7 +98,7 @@ function base64Encode(str)
     return out;
 }
 
-function showError(data)
+function showError(data, textStatus, error)
 {
     var message = "Unspecified error";
     
@@ -117,6 +117,11 @@ function showError(data)
         if(data.message != undefined && data.message != "")
         {
             message = data.message;
+        }
+		
+		if(data.responseText != undefined && data.responseText != "")
+        {
+            message = data.responseText;
         }
     }
     

@@ -189,6 +189,27 @@ viewer.listeners = viewer.listeners || {};
                 return new viewer.interactors.SprintInteractor();
             },
             enumerable: false
+        },
+        getWorklogPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.WorklogPresenter(this);
+            },
+            enumerable: false
+        },
+        getWorklogView : {
+            value: function(presenter)
+            {
+                return new viewer.views.WorklogView(presenter);
+            },
+            enumerable: false
+        },
+        getWorklogInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.WorklogInteractor();
+            },
+            enumerable: false
         }
     });
 
@@ -206,6 +227,7 @@ viewer.listeners = viewer.listeners || {};
                     planning: "getPlanningPresenter",
                     offsprint: "getOffsprintPresenter",
                     sprint: "getSprintPresenter",
+                    worklog: "getWorklogPresenter"
                 };
 
     function Initializer()

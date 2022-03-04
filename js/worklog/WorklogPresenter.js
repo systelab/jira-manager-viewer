@@ -1,43 +1,24 @@
 (function(presenters)
 {
-    function OffsprintPresenter(Context)
+    function WorklogPresenter(Context)
     {
-        this.interactor = Context.getOffsprintInteractor();
-        this.interactorSettings = Context.getSettingsInteractor();
-        this.interactorBoard = Context.getBoardInteractor();
+        this.interactor = Context.getWorklogInteractor();
        
-        this.view = Context.getOffsprintView(this);
+        this.view = Context.getWorklogView(this);
         this.view.init();
     }
 
-    Object.defineProperties(OffsprintPresenter.prototype,
+    Object.defineProperties(WorklogPresenter.prototype,
     {
-        getSettings : {
-            value: function()
-            {
-                var self = this;
-                    
-                this.interactorSettings.load(new viewer.listeners.BaseDecisionListener(
-                    function(data)
-                    {
-                        self.view.onLoadSettings(data);
-                    },
-                    function(data)
-                    {
-                        self.view.showError(data);
-                    }));
-            },
-            enumerable: false
-        },
 		getIssue : {
-            value: function(key)
+            value: function(key, value)
             {
                 var self = this;
                     
                 this.interactor.getIssue(key, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
-                        self.view.onIssue(data);
+                        self.view.onIssue(data, value);
                     },
                     function(data)
                     {
@@ -47,14 +28,14 @@
             enumerable: false
         },
         getIssues : {
-            value: function(issues)
+            value: function(issues, projects)
             {
                 var self = this;
-                    
-                this.interactor.getIssues(issues, new viewer.listeners.BaseDecisionListener(
+                
+                this.interactor.getIssues(issues, projects, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
-                        self.view.onSubtasks(data);
+                        self.view.onIssues(data);
                     },
                     function(data)
                     {
@@ -63,15 +44,32 @@
             },
             enumerable: false
         },
-        save : {
-            value: function(data)
+        getWorklog : {
+            value: function(fromRaw, toRaw)
             {
                 var self = this;
-                    
-                this.interactor.save(data, new viewer.listeners.BaseDecisionListener(
+                
+                this.interactor.getWorklog(fromRaw, toRaw, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
-                        self.view.onSave(data);
+                        self.view.onWorklog(data);
+                    },
+                    function(data)
+                    {
+                        self.view.showError(data);
+                    }));
+            },
+            enumerable: false
+        },
+        getWorklogList : {
+            value: function(ids)
+            {
+                var self = this;
+                
+                this.interactor.getWorklogList(ids, new viewer.listeners.BaseDecisionListener(
+                    function(data)
+                    {
+                        self.view.onWorklogList(data);
                     },
                     function(data)
                     {
@@ -82,5 +80,5 @@
         }
     });
 
-    presenters.OffsprintPresenter = OffsprintPresenter;
+    presenters.WorklogPresenter = WorklogPresenter;
 })(viewer.presenters);
