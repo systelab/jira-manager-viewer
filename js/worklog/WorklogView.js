@@ -22,18 +22,26 @@
                 });
 				
                 $(document).on("login", function ()
-                {             
+                {   
                     var menu = $("<div/>", {class: "menu-item", href: "", html: "<i class=\"icon icomoon-arrow-down-right\"></i>Worklog"});
                     menu.appendTo($(".left-panel-inner .content .main-menu"));
                     menu.click(function()
                     {
                         $.xhrPool.abortAll();
                         
+						self.presenter.getSettings();
+						
                         $(".menu-item").removeClass("active");
                         $(this).addClass("active");
 				
 						$(".main-view").load("js/worklog/template.html", function()
 						{
+							self.progress = $(".worklog-table-container .loading")[0];
+							
+							componentHandler.upgradeElement(self.progress);
+							
+							self.progress.MaterialProgress.setProgress(0);
+							
 							$('#fromCalendar').datepicker(
 							{
 								dateFormat: 'yy-mm-dd',
@@ -67,6 +75,22 @@
             },
             enumerable: false
         },
+        commit : {
+            value: function(data)
+            {
+                var self = this;
+                
+                this.settings.projects = [];
+				
+                $.each($(this.dialog).find(".body .context-menu-item.active"), function()
+                {
+                    self.settings.projects.push($(this).find(".status_id").text());
+                });
+				
+                this.presenter.setSetting("projects", this.settings.projects);
+            },
+            enumerable: false
+        },
 		search : {
             value: function()
             {
@@ -74,48 +98,82 @@
 		
 				$("#usersContainer").html("");
 			
-				var fromRaw = $('#fromCalendar').datepicker("getDate");
-				var toRaw = $('#toCalendar').datepicker("getDate");
+				var fromRaw = $('#fromCalendar').datepicker({ dateFormat: 'dd/mm/yy' }).val();
+				var toRaw = $('#toCalendar').datepicker({ dateFormat: 'dd/mm/yy' }).val();
 				
-				this.presenter.getWorklog(fromRaw.getTime(), toRaw.getTime());
+				this.users = new Array();
+				this.count = 0;
+				this.progress.MaterialProgress.setProgress(0);
+				
+				this.presenter.getIssues(this.settings.projects, fromRaw, toRaw);
             },
             enumerable: false
         },
-		onWorklog : {
+        onProjects : {
             value: function(data)
             {
-                var ids = [];
+				var self = this;
 				
-				$.each( data.values, function( key, value )
+				var projects = this.template.find(".body");
+                    
+				$.each(data, function()
 				{
-					if(value.updatedTime < $('#toCalendar').datepicker("getDate").getTime())
+					var clone = self.projectsTemplate.clone();
+					clone.html("<img class='icon' src='" + this.avatarUrls["24x24"] + "'/><span class='status_id'>" + this.id +"</span>" + this.name);
+					
+					var id = this.key;
+					var name = this.name;
+					
+					clone.click(function()
 					{
-						ids.push(value.worklogId);
-					}
+						$(this).toggleClass("active");
+                        var cnt = self.dialog.find(".body .context-menu-item.active").length;
+						self.dialog.find(".selection").html(cnt + " elements selected");
+					}).appendTo(projects);
 				});
+            },
+            enumerable: false
+        },
+        onLoadSettings : {
+            value: function(data)
+            {
+				var self = this;
 				
-				if(ids.length > 0)
+                this.settings = data;
+				
+				if(this.settings.projects == undefined)
 				{
-					this.presenter.getWorklogList(ids);
+					$(".modal-dialog").load("js/worklog/projects.html", function()
+					{
+						self.template = $(this);
+						
+						self.projectsTemplate = self.template.find(".body li").detach();
+						
+						self.dialog = $(this).find(".project-dialog");
+						
+						self.dialog.find(".mdl-button.close").click(function()
+						{
+							self.dialog[0].close();
+						});
+						
+						self.dialog.find(".mdl-button.confirm").click(function()
+						{
+							self.commit();
+						});
+					   
+						self.dialog[0].showModal();
+						
+						self.presenter.getProjects();
+					});
 				}
             },
             enumerable: false
         },
-		onWorklogList : {
+        onSaveSetting : {
             value: function(data)
             {
-				this.worklogs = data;
-				
-				var issues = [];
-				
-                $.each( data, function( key, value )
-				{
-					issues.push(value.issueId);
-				});
-				
-				var project = (this.board.name.substring(0, this.board.name.indexOf("_")));
-				
-				this.presenter.getIssues(issues, [project]);
+                //this.changeBoard(data.board.id, data.board.name);
+                this.dialog[0].close();
             },
             enumerable: false
         },
@@ -131,34 +189,50 @@
             {
 				var self = this;
 				
-				var users = new Array();
+				this.count += data.issues.length;
 				
-				$.each( this.worklogs, function( key, value )
+				$.each( data.issues, function( key, value )
 				{
-					if(data.issues.find( issue => issue.id === value.issueId ) != undefined)
+					$.each( value.fields.worklog.worklogs, function( key2, value2 )
 					{
-						var author = value.author.accountId;
+						var author = value2.author.accountId;
 					
-						if(users[author] == undefined)
+						if(self.users[author] == undefined)
 						{
-							users[author] = {"counter": {"original": 0, "current": 0}, "seconds": 0};
+							self.users[author] = {"counter": {"original": 0, "current": 0}};
 							
-							$("#usersContainer").append(self.createCard(author, value.author.avatarUrls["48x48"], value.author.displayName));
-							
-							var progress = $("#" + author + " .loading")[0];
-							
-							componentHandler.upgradeElement(progress);
-							
-							progress.MaterialProgress.setProgress(0);
+							$("#usersContainer").append(self.createCard(author, value2.author.avatarUrls["48x48"], 
+																				value2.author.displayName));
 						}
 						
-						users[author].counter.original++;
-						users[author].seconds += value.timeSpentSeconds;
-						
-						$("#" + author + " .mdl-card--border span").html(self.formatTime(users[author].seconds));
-				
-					}
+						self.updateUser(author, value.fields.project.key, value2.timeSpentSeconds);
+					});
 				});
+				
+				self.progress.MaterialProgress.setProgress((this.count/data.total)*100);
+            },
+            enumerable: false
+        },
+		updateUser : {
+            value: function(author, project, seconds)
+            {
+                if(this.users[author][project] == undefined)
+				{
+					this.users[author][project] = seconds;
+					var content = "<div class='mdl-card__actions mdl-card--border " + project + "'>" + project +"<div class='mdl-layout-spacer'></div><span></span></div>";
+					
+					$("#" + author).append(content);
+				}
+				else
+				{
+					this.users[author][project] += seconds;
+				}
+				
+				this.users[author].counter.current++;
+				
+				var formatted = this.formatTime(this.users[author][project]);
+				
+				$("#" + author + " ." + project + " span").html(formatted);
             },
             enumerable: false
         },
@@ -186,11 +260,9 @@
             value: function(user, image, displayName)
             {
                 return "<li id= '" + user + "' class='demo-card-event mdl-card mdl-shadow--2dp'>" + 
-						"<div class='mdl-progress mdl-js-progress loading'></div>" +
 						"  <div class='mdl-card__title mdl-card--expand'><h5>" + displayName +
 						"		</h5><img src='" + image + "'/>" + 
 						"  </div>" + 
-						"<div class='mdl-card__actions mdl-card--border'><div class='mdl-layout-spacer'></div><span></span></div>" + 
 						"</li>";
             },
             enumerable: false
