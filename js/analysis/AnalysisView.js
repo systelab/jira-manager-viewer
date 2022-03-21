@@ -45,17 +45,16 @@
                 
                 if(data.fields.timetracking.originalEstimateSeconds > 0 && data.fields.timetracking.timeSpentSeconds > 0)
                 {
-                    var table = $("table.analysis");
+                    var table = $(".analysis-table");
 
                     var issuetype = table.find("#issuetype" + data.fields.issuetype.id);
                     
                     if(issuetype.length == 0)
                     {
-                        issuetype = $("<td/>", {id: "issuetype" + data.fields.issuetype.id, html: data.fields.issuetype.name});
-                        issuetype.appendTo(table.find("thead tr"));
+                        issuetype = $("<div/>", {id: "issuetype" + data.fields.issuetype.id, class: "flex-table-row-item track-name", html: data.fields.issuetype.name});
+                        issuetype.appendTo(table.find(".flex-table-header"));
 						
-						$("<td/>", {"data-original-hours": 0, "data-hours": 0}).appendTo(table.find("tbody tr"));
-						$("<td/>").appendTo(table.find("tfoot tr"));
+						$("<div/>", {"data-original-hours": 0, "data-hours": 0, class: "flex-table-row-item track-name"}).appendTo(table.find(".flex-table-body"));
                     }
                 
 					var col = issuetype.index();
@@ -64,7 +63,7 @@
                     
 					if(row.length > 0)
 					{
-						var td = row.find("td:nth-child(" + (col + 1) + ")");
+						var td = row.find("div:nth-child(" + (col + 1) + ")");
 						
 						if(td.length > 0)
 						{
@@ -75,9 +74,9 @@
 							
 							td.attr("data-original-hours", original);
 							td.attr("data-hours", spent);
-							td.html(spent + "h/" + original + "h " + percent + "%");
+							td.html("<span class='percent'>" + percent + "%</span> (" + spent + "h/" + original + "h)");
 							
-							var tdTotal = row.find("td:nth-child(4)");
+							var tdTotal = row.find("div:nth-child(4)");
 							
 							if(tdTotal.length > 0)
 							{
@@ -89,7 +88,7 @@
 								tdTotal.attr("data-hours", spentTotal);
 								tdTotal.attr("data-percent", percentTotal);
 								
-								tdTotal.html(spentTotal + "h/" + originalTotal + "h " + percentTotal + "%");
+								tdTotal.html("<span class='percent'>" + percentTotal + "%</span> (" + spentTotal + "h/" + originalTotal + "h)");
 								
 								this.calculateTotal();
 							}
@@ -102,11 +101,11 @@
         calculateTotal : {
             value: function(data)
             {
-				var table = $("table.analysis");
+				var table = $(".analysis-table");
 				var percent = 0;
 				var elements = 0;
 				
-				table.find("tbody td:nth-child(4)").each(function(idx, element)
+				table.find(".flex-table-body div:nth-child(4)").each(function(idx, element)
                 {
                     if(parseInt($(this).attr("data-original-hours")) > 0)
 					{
@@ -117,7 +116,18 @@
 				
 				if(elements > 0)
 				{
-					table.find("tfoot td:nth-child(4)").html(percent/elements + "%");
+					var mean = Math.abs(percent/elements);
+					
+					$(".mean-container .mean .hours").html(percent/elements + "%");
+					
+					if(mean > 20)
+					{
+						$(".mean-container .mean .rates").html("<span class=\"icomoon-trending-down red-fg\"></span><span class=\"trend red-fg\">" + (mean - 20) + "%</span> above target");
+					}
+					else
+					{
+						$(".mean-container .mean .rates").html("<span class=\"icomoon-trending-down green-fg\"></span><span class=\"trend green-fg\">" + (20 - mean) + "%</span> below target");
+					}
 				}
             },
             enumerable: false
@@ -158,16 +168,25 @@
                 
                 $(".main-view").load("js/analysis/template.html", function()
                 {
-					var table = $("table.analysis");
+					var table = $(".analysis-table");
 							
+					var header = table.find(".flex-table-header");
+					
+					$("<div/>", {html: "", class: "flex-table-row-item track-name"}).appendTo(header);
+					$("<div/>", {html: "User story", class: "flex-table-row-item artist-name"}).appendTo(header);
+					$("<div/>", {html: "USP", class: "flex-table-row-item track-number"}).appendTo(header);
+					$("<div/>", {html: "Total", class: "flex-table-row-item track-name"}).appendTo(header);
+						
 					$.each(self.issues, function()
 					{
-						var row = $("<tr/>", {id: "userstory" + this.key});
-						$("<td/>", {html: this.key}).appendTo(row);
-						$("<td/>", {html: this.fields.summary}).appendTo(row);
-						$("<td/>", {html: this.fields.customfield_10003}).appendTo(row);
-						$("<td/>", {"data-original-hours": 0, "data-hours": 0, "data-percent": 0}).appendTo(row);
-						row.appendTo(table.find("tbody"));
+						var row = $("<div/>", {id: "userstory" + this.key, class: "flex-table-row flex-table-body"});
+						
+						$("<div/>", {html: this.key, class: "flex-table-row-item track-name"}).appendTo(row);
+						$("<div/>", {html: this.fields.summary, class: "flex-table-row-item artist-name"}).appendTo(row);
+						$("<div/>", {html: this.fields.customfield_10003, class: "flex-table-row-item track-number"}).appendTo(row);
+						$("<div/>", {"data-original-hours": 0, "data-hours": 0, "data-percent": 0, class: "flex-table-row-item track-name"}).appendTo(row);
+						
+						row.appendTo(table);
 					});
 					
                     self.getIssues();
