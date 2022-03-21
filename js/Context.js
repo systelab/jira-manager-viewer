@@ -210,6 +210,27 @@ viewer.listeners = viewer.listeners || {};
                 return new viewer.interactors.WorklogInteractor();
             },
             enumerable: false
+        },
+        getAnalysisPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.AnalysisPresenter(this);
+            },
+            enumerable: false
+        },
+        getAnalysisView : {
+            value: function(presenter)
+            {
+                return new viewer.views.AnalysisView(presenter);
+            },
+            enumerable: false
+        },
+        getAnalysisInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.AnalysisInteractor();
+            },
+            enumerable: false
         }
     });
 
@@ -227,7 +248,8 @@ viewer.listeners = viewer.listeners || {};
                     planning: "getPlanningPresenter",
                     offsprint: "getOffsprintPresenter",
                     sprint: "getSprintPresenter",
-                    worklog: "getWorklogPresenter"
+                    worklog: "getWorklogPresenter",
+                    analysis: "getAnalysisPresenter",
                 };
 
     function Initializer()
