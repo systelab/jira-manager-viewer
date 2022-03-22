@@ -72,9 +72,11 @@
 							
 							var percent = Math.ceil(((spent / original) - 1) * 100);
 							
+							var classPercent = (Math.abs(percent) > 20) ? "red-fg" : "green-fg";
+							
 							td.attr("data-original-hours", original);
 							td.attr("data-hours", spent);
-							td.html("<span class='percent'>" + percent + "%</span> (" + spent + "h/" + original + "h)");
+							td.html("<span class='percent trend " + classPercent + "'>" + percent + "%</span> (" + spent + "h/" + original + "h)");
 							
 							var tdTotal = row.find("div:nth-child(4)");
 							
@@ -88,7 +90,9 @@
 								tdTotal.attr("data-hours", spentTotal);
 								tdTotal.attr("data-percent", percentTotal);
 								
-								tdTotal.html("<span class='percent'>" + percentTotal + "%</span> (" + spentTotal + "h/" + originalTotal + "h)");
+								classPercent = (Math.abs(percentTotal) > 20) ? "red-fg" : "green-fg";
+								
+								tdTotal.html("<span class='percent trend " + classPercent + "'>" + percentTotal + "%</span> (" + spentTotal + "h/" + originalTotal + "h)");
 								
 								this.calculateTotal();
 							}
@@ -116,9 +120,9 @@
 				
 				if(elements > 0)
 				{
-					var mean = Math.abs(percent/elements);
+					var mean = Math.abs(percent/elements).toFixed(2);
 					
-					$(".mean-container .mean .hours").html(percent/elements + "%");
+					$(".mean-container .mean .hours").html((percent/elements).toFixed(2) + "%");
 					
 					if(mean > 20)
 					{
