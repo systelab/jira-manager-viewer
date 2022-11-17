@@ -231,6 +231,27 @@ viewer.listeners = viewer.listeners || {};
                 return new viewer.interactors.AnalysisInteractor();
             },
             enumerable: false
+        },
+        getReleaseNotesPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.ReleaseNotesPresenter(this);
+            },
+            enumerable: false
+        },
+        getReleaseNotesView : {
+            value: function(presenter)
+            {
+                return new viewer.views.ReleaseNotesView(presenter);
+            },
+            enumerable: false
+        },
+        getReleaseNotesInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.ReleaseNotesInteractor();
+            },
+            enumerable: false
         }
     });
 
@@ -250,6 +271,7 @@ viewer.listeners = viewer.listeners || {};
                     sprint: "getSprintPresenter",
                     worklog: "getWorklogPresenter",
                     analysis: "getAnalysisPresenter",
+                    release_notes: "getReleaseNotesPresenter",
                 };
 
     function Initializer()

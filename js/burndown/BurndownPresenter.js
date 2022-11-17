@@ -63,37 +63,15 @@
             },
             enumerable: false
         },
-        getWorklog : {
-            value: function(beginDate, endDate)
+		getAssignableUsers : {
+            value: function(issue)
             {
                 var self = this;
                     
-                this.interactor.getWorklogModified(beginDate, endDate, new viewer.listeners.BaseDecisionListener(
+                this.interactor.getAssignableUsers(issue, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
-                        var ids = [];
-                        $.each( data.values, function( key, value )
-                        {
-                            if(value.updatedTime < endDate)
-                            {
-                                ids.push(value.worklogId);
-                            }
-                        });
-
-                        if(ids.length > 0)
-                        {
-                            self.interactor.getWorklogList(ids, new viewer.listeners.BaseDecisionListener(
-                                function(data)
-                                {
-                                    self.view.onWorklog(data);
-                                    
-                                    //self.view.onWorklogList(data);
-                                },
-                                function(data)
-                                {
-                                    self.view.showError(data);
-                                }));
-                        }
+                        self.view.onAssignableUsers(data);
                     },
                     function(data)
                     {
@@ -102,6 +80,67 @@
             },
             enumerable: false
         },
+		getUserGroups : {
+            value: function(user)
+            {
+                var self = this;
+                    
+                this.interactor.getUserGroups(user.accountId, new viewer.listeners.BaseDecisionListener(
+                    function(data)
+                    {
+                        self.view.onUserGroups(user, data);
+                    },
+                    function(data)
+                    {
+                        self.view.showError(data);
+                    }));
+            },
+            enumerable: false
+        },
+		load : {
+            value: function(board, sprint)
+            {
+                var self = this;
+                    
+                this.interactor.load(board, sprint, new viewer.listeners.BaseDecisionListener(
+                    function(data)
+                    {
+                        self.view.onLoad(data);
+                    },
+                    function(data)
+                    {
+                        self.view.showError(data);
+                    }));
+            },
+            enumerable: false
+        },
+		save : {
+            value: function(board, sprint, values)
+            {
+				this.interactor.load(board, sprint, new viewer.listeners.BaseDecisionListener(
+				function(data)
+				{
+					self.interactor.save(board, sprint, values, new viewer.listeners.BaseDecisionListener(
+                    function(data)
+                    {
+                        self.view.onSave(data);
+                    },
+                    function(data)
+                    {
+                        self.view.showError(data);
+                    }));
+				},
+				function(data)
+				{
+					self.view.showError(data);
+				}));
+				
+                var self = this;
+                    
+                
+            },
+            enumerable: false
+        }
     });
 
     presenters.BurndownPresenter = BurndownPresenter;

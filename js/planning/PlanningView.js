@@ -144,7 +144,30 @@
                             $("<td/>", {html: ""}).appendTo(row);
                             $("<td/>", {html: this.fields.customfield_10003}).appendTo(row);
                             row.appendTo(table);
+							
+							console.log(this)
                         });
+						
+						table = $("table.yield");
+                        
+                        $.each(self.issues, function()
+                        {
+                            var row = $("<tr/>");
+                            $("<td/>", {html: this.key}).appendTo(row);
+                            $("<td/>", {html: this.fields.summary}).appendTo(row);
+                            $("<td/>", {html: ""}).appendTo(row);
+                            $("<td/>", {html: this.fields.customfield_10003}).appendTo(row);
+							$("<td/>", {html: ""}).appendTo(row);
+							$("<td/>", {html: this.fields.customfield_10003}).appendTo(row);
+                            $("<td/>", {html: Math.round(this.fields.aggregatetimeoriginalestimate/ 3600)}).appendTo(row);
+							$("<td/>", {html: ""}).appendTo(row);
+                            $("<td/>", {html: Math.round(this.fields.aggregatetimespent/ 3600)}).appendTo(row);
+                            row.appendTo(table);
+							
+							console.log(this)
+                        });
+						
+						
                         
                         return false;
                     }

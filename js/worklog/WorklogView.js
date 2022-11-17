@@ -216,6 +216,7 @@
 		updateUser : {
             value: function(author, project, seconds)
             {
+				console.log(author, project, seconds)
                 if(this.users[author][project] == undefined)
 				{
 					this.users[author][project] = seconds;

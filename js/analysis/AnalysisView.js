@@ -120,17 +120,17 @@
 				
 				if(elements > 0)
 				{
-					var mean = Math.abs(percent/elements).toFixed(2);
+					var mean = round(Math.abs(percent/elements), 2);
 					
 					$(".mean-container .mean .hours").html((percent/elements).toFixed(2) + "%");
 					
 					if(mean > 20)
 					{
-						$(".mean-container .mean .rates").html("<span class=\"icomoon-trending-down red-fg\"></span><span class=\"trend red-fg\">" + (mean - 20) + "%</span> above target");
+						$(".mean-container .mean .rates").html("<span class=\"icomoon-trending-down red-fg\"></span><span class=\"trend red-fg\">" + round(mean - 20, 2) + "%</span> above target");
 					}
 					else
 					{
-						$(".mean-container .mean .rates").html("<span class=\"icomoon-trending-down green-fg\"></span><span class=\"trend green-fg\">" + (20 - mean) + "%</span> below target");
+						$(".mean-container .mean .rates").html("<span class=\"icomoon-trending-down green-fg\"></span><span class=\"trend green-fg\">" + round(20 - mean, 2) + "%</span> below target");
 					}
 				}
             },

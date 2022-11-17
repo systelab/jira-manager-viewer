@@ -15,12 +15,25 @@
                 var self = this;
 
                 this.issues = [];
-                
+                this.resources = {};
+				
                 $(".playlists-list").on("loaded", function (evt, data)
-                {             
+                {
+									
                     self.issues = data.issues;
                 });
                 
+				$(document).on("sprint", function (evt, data)
+                {
+                    self.sprint = data;
+					self.sprint.name = self.sprint.name.replace(/ /g, '_');
+                });
+				
+				$(document).on("board", function (evt, data)
+                {
+                    self.board = data;
+                });
+				
                 $(document).on("login", function ()
                 {             
                     var menu = $("<div/>", {class: "menu-item", href: "", html: "<i class=\"icon icomoon-arrow-down-right\"></i>Burndown"});
@@ -32,7 +45,7 @@
                         $(".menu-item").removeClass("active");
                         $(this).addClass("active");
                 
-                        self.presenter.getSettings();
+                        self.presenter.load(self.board.name, self.sprint.name);
                     });
                 });
             },
@@ -62,7 +75,7 @@
                     var estimate = data.fields.timetracking.originalEstimateSeconds / 3600;
                     
                     $("<td/>", {html: data.fields.parent.key}).appendTo(row);
-                    $("<td/>", {html: data.fields.issuetype.name[0]}).appendTo(row);
+                    $("<td/>", {html: data.fields.issuetype.name}).appendTo(row);
                     $("<td/>", {html: data.key}).appendTo(row);
                     $("<td/>", {html: data.fields.summary}).appendTo(row);
                     $("<td/>", {html: estimate}).appendTo(row);
@@ -74,7 +87,52 @@
                     changes.fill(estimate);
                     //backgrounds.fill("#fff");
 
-                    $.each(data.changelog.histories, function(i)
+					var dataSet = self.chartData.datasets.find(({ label }) => label === data.fields.issuetype.name);
+					var dataSetEstimate = self.chartData.datasets.find(({ label }) => label === data.fields.issuetype.name + " Estimate");
+					
+					if(!dataSet)
+					{
+						dataSet = {
+						  label: data.fields.issuetype.name,
+						  fill: false,
+						  backgroundColor: "#fff",
+						  borderColor: self.getColor(self.chartData.datasets.length),
+						  data: new Array(self.workingDays.length),
+						  cubicInterpolationMode: 'monotone',
+						  tension: 0.4
+						};
+						
+						dataSet.data.fill(0);
+						
+						self.chartData.datasets.push(dataSet);
+						
+						dataSetEstimate = {
+						  label: data.fields.issuetype.name + " Estimate",
+						  fill: false,
+						  backgroundColor: "#fff",
+						  borderColor: self.getColor(self.chartData.datasets.length),
+						  data: new Array(self.workingDays.length),
+						  originalData: new Array(self.workingDays.length),
+						  borderDash: [5, 5],
+						  workers: []
+						};
+						
+						dataSetEstimate.data.fill(0);
+						dataSetEstimate.originalData.fill(0);
+						
+						self.chartData.datasets.push(dataSetEstimate);
+						
+						self.myChart.update();
+						
+						if(self.resources[data.fields.issuetype.name] == undefined)
+						{
+							self.resources[data.fields.issuetype.name] = {};
+						}
+						
+						self.createEstimateResources(data.fields.issuetype.name, dataSetEstimate.borderColor );
+					}
+
+                    $.each([...data.changelog.histories].reverse(), function(i)
                     {
                         var date = moment(this.created);
                         
@@ -82,6 +140,7 @@
                         
                         if(index > -1)
                         {
+							var author = this.author;
                             $.each(this.items, function(j)
                             {
                                 if(this.field == "timeestimate")
@@ -91,9 +150,17 @@
                                     
                                     changes.fill(to, index);
                                 }
-                                else if(this.field == "status" && this.to == 10028)
+                                else if(this.field == "status" && this.to == 10706)
                                 {
                                     backgrounds[index] = "#0f0";
+                                }
+								
+								else if(this.field == "timespent")
+                                {
+                                    if(dataSetEstimate.workers.findIndex(({ accountId }) => accountId == author.accountId) < 0)
+									{
+										dataSetEstimate.workers.push(author);
+									}
                                 }
                             });
                         }
@@ -104,16 +171,21 @@
                     if(index > -1)
                     {
                         changes.fill("", index + 1);
-                        //backgrounds.fill("", index + 1);
                     }
                     
                     $.each(self.workingDays, function(i)
                     {
                         var value = changes[i];
                         var background = backgrounds[i];
-                        
+						
+						dataSet.data[i] += changes[i];
+						dataSetEstimate.data[i] += estimate;
+						dataSetEstimate.originalData[i] += estimate;
+						
                         $("<td/>", {html: value, style: "background-color: " + background }).appendTo(row);
                     });
+					
+					self.myChart.update();
                     
                     row.appendTo(tbody);
                 }
@@ -130,7 +202,70 @@
                     self.onSubtask(this);
                 });
                 
-                this.progress.hide();
+				
+				var dataSets = self.chartData.datasets.filter(({ label }) => label.slice(label.length-9,label.length) != " Estimate");
+				
+				var todayIndex = self.workingDays.findIndex((element) => element == moment().format('DD/MM/YYYY'));
+				
+				$.each(dataSets, function(j)
+				{
+					dataSets[j].data = dataSets[j].data.slice(0, todayIndex);
+				});
+				
+				self.myChart.update();
+				
+				self.computeEstimate();
+            },
+            enumerable: false
+        },
+        computeEstimate : {
+            value: function()
+            {
+				var self = this;
+				
+                var dataSetsEstimate = self.chartData.datasets.filter(({ label }) => label.slice(label.length-9, label.length) == " Estimate");
+				
+				$.each(dataSetsEstimate, function(dataset)
+				{
+					this.data = [...this.originalData];
+					this.counter = this.originalData[0];
+				});
+				
+				$.each(self.workingDays, function(i)
+				{
+					$.each(dataSetsEstimate, function(dataset)
+					{
+						var numResources = 0;
+						
+						var resources = self.resources[this.label.slice(0, this.label.length-9)];
+						
+						if(resources != undefined)
+						{
+							$.each(resources, function(resource)
+							{
+								if(this[i] != undefined)
+								{
+									if(this[i].type == "full")
+									{
+										++numResources;
+									}
+									else if(this[i].type == "mid")
+									{
+										numResources += 0.5;
+									}
+								}
+							});
+						}
+						
+						this.counter -= numResources * 5;
+						this.data[i] = this.counter;
+						
+						if(this.data[i] < 0)
+							this.data[i] = 0;
+					});
+				});
+				
+				self.myChart.update();
             },
             enumerable: false
         },
@@ -176,8 +311,6 @@
                 {
                     if(this.state == "active")
                     {
-                        self.sprint = this;
-                        
                         self.workingDays = self.calcBusinessDays(this.startDate, this.endDate);
                         
                         var table = $("table.burndown");
@@ -197,30 +330,14 @@
                         }
                         
                         row.appendTo(table);
-                        
-                        self.getIssues();
-                        
-                        //self.presenter.getWorklog(moment(this.startDate).valueOf(), moment(this.endDate).valueOf());
+						
+						self.getIssues();
                         
                         return false;
                     }
                 });
                 
-                
-            },
-            enumerable: false
-        },
-        onWorklog : {
-            value: function(data)
-            {
-                var self = this;
-                
-                $.each(data, function( key, value )
-                {
-                    
-                });
-                
-                self.getIssues();
+                self.setupChart();
             },
             enumerable: false
         },
@@ -243,6 +360,255 @@
             value: function(data)
             {
                 showError(data);
+            },
+            enumerable: false
+        },
+        setupChart : {
+            value: function()
+            {
+                const DATA_COUNT = 7;
+				const NUMBER_CFG = {count: DATA_COUNT, min: -100, max: 100};
+
+				const labels = Array.from(this.workingDays, x => moment(x, "DD/MM/YYYY").format("DD/MM"));
+				this.chartData = {
+				  labels: labels,
+				  datasets: []
+				};
+				
+				const config = {
+				  type: 'line',
+				  data: this.chartData,
+				  options: {
+					responsive: true,
+					plugins: {
+					  title: {
+						display: true,
+						text: 'Burndown'
+					  },
+					},
+					interaction: {
+					  mode: 'index',
+					  intersect: false
+					},
+					scales: {
+					  x: {
+						display: true,
+						title: {
+						  display: true,
+						  text: 'Days'
+						}
+					  },
+					  y: {
+						display: true,
+						title: {
+						  display: true,
+						  text: 'Hours'
+						}
+					  }
+					}
+				  },
+				};
+				
+				const ctx = document.getElementById('myChart');
+				this.myChart = new Chart(ctx, config);
+				
+            },
+            enumerable: false
+        },
+        onAssignableUsers : {
+            value: function(data)
+            {
+				var self = this;
+				
+				this.users = [];
+				
+				var resources = this.template.find(".body");
+				
+                $.each(data, function()
+                {
+					if(this.active)
+					{
+						var clone = self.resourcesTemplate.clone();
+						clone.html("<img class='icon' src='" + this.avatarUrls["32x32"] + "' title='" + this.displayName + "'/><span class='status_id'>" + this.displayName +"</span>" + this.emailAddress);
+					
+						clone.click(function()
+						{
+							$(this).toggleClass("active");
+							var cnt = self.dialog.find(".body .context-menu-item.active").length;
+							self.dialog.find(".selection").html(cnt + " elements selected");
+						}).appendTo(resources);
+					}
+                });
+            },
+            enumerable: false
+        },
+        getColor : {
+            value: function(i)
+            {
+                var colors = ["#1e88e5", "#90caf9", "#ffb300", "#ffd54f", "#8e24aa", "#ce93d8", "#f4511e", "#ff8a65"];
+				
+				if(i >= colors.length)
+					return colors[0];
+				else
+					return colors[i];
+            },
+            enumerable: false
+        },
+        updateEstimateResources : {
+            value: function(task, table)
+            {
+				var self = this;
+				
+				table.html("");
+				
+                $.each(this.resources[task], function(name)
+                {
+					var tr = $("<tr/>");
+				
+					$.each(this, function(j)
+					{
+						var td = $("<td/>");
+						
+						var className = this.type || "full";
+						
+						var container = $("<div/>", {class: className}).click(function()
+						{
+							if($(this).hasClass("full"))
+							{
+								self.resources[task][name][j].type = "no";
+								$(this).removeClass("full").addClass("no");
+							}
+							else if($(this).hasClass("mid"))
+							{
+								self.resources[task][name][j].type = "full";
+								$(this).removeClass("mid").addClass("full");
+							}
+							else
+							{
+								self.resources[task][name][j].type = "mid";
+								$(this).removeClass("no").addClass("mid");
+							}
+							
+							self.computeEstimate();
+							self.save();
+						}).appendTo(td);
+					
+						$("<img/>", {class: "icon", src: this.src, title: this.name}).appendTo(container);
+						
+						td.appendTo(tr);
+					});
+					
+					tr.appendTo(table);
+                });
+            },
+            enumerable: false
+        },
+        createEstimateResources : {
+            value: function(name, color)
+            {
+				var self = this;
+				
+				var table = $("<table/>", {"class": "assigned ", style: "background-color:" + color}).data("task", name);
+				
+				var resourceContainer = $("<div/>", {class: "resourceContainer"});
+				
+				$("<i/>", {class: "iconMenu fas fa-exchange-alt"}).click(function()
+                {
+					self.showDialog(name, table);
+                }).appendTo(resourceContainer);
+				
+				table.appendTo(resourceContainer);
+				
+				resourceContainer.appendTo(".uncommited-table-container .estimate_resources");
+				
+				self.updateEstimateResources(name, table);
+            },
+            enumerable: false
+        },
+        onLoad : {
+            value: function(data)
+            {
+				this.resources = data;
+				
+				this.presenter.getSettings();
+            },
+            enumerable: false
+        },
+        showDialog : {
+            value: function(task, table)
+            {
+				var self = this;
+				
+				$(".modal-dialog").load("js/burndown/resources.html", function()
+				{
+					self.template = $(this);
+					
+					self.resourcesTemplate = self.template.find(".body li").detach();
+					
+					self.dialog = $(this).find(".resource-dialog");
+					
+					self.dialog.find(".name").html(task + " Resources")
+					
+					self.dialog.find(".mdl-button.close").click(function()
+					{
+						self.dialog[0].close();
+					});
+					
+					self.dialog.find(".mdl-button.confirm").click(function()
+					{
+						self.commit(task, table);
+					});
+				   
+					self.dialog[0].showModal();
+					
+					self.presenter.getAssignableUsers(self.issues[0].key);
+				});
+            },
+            enumerable: false
+        },
+        onSave : {
+            value: function(data)
+            {
+				this.computeEstimate();
+            },
+            enumerable: false
+        },
+        save : {
+            value: function()
+            {
+				this.presenter.save(this.board.name, this.sprint.name, this.resources);
+            },
+            enumerable: false
+        },
+        commit : {
+            value: function(task, table)
+            {
+                var self = this;
+                
+				table.html("");
+				
+				var resources = {};
+				
+                $.each($(this.dialog).find(".body .context-menu-item.active"), function()
+                {
+					var name = $(this).find(".status_id").text();
+					
+					resources[name] = new Array();
+					
+					var element = $(this);
+					
+					$.each(self.workingDays, function(i)
+                    {
+                       resources[name].push({name: element.find(".icon").attr("title"), "src": element.find(".icon").attr("src"), "type": "full"});	
+                    });
+                });
+				
+				self.resources[task] = resources;
+				
+				self.updateEstimateResources(task, table);
+				self.save();
+				
+				this.dialog[0].close();
             },
             enumerable: false
         }
