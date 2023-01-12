@@ -191,21 +191,29 @@
 				
 				this.count += data.issues.length;
 				
+				var fromRaw = moment($('#fromCalendar').datepicker({ dateFormat: 'dd/mm/yy' }).val());
+				var toRaw = moment($('#toCalendar').datepicker({ dateFormat: 'dd/mm/yy' }).val())
+				
 				$.each( data.issues, function( key, value )
 				{
 					$.each( value.fields.worklog.worklogs, function( key2, value2 )
 					{
 						var author = value2.author.accountId;
 					
-						if(self.users[author] == undefined)
+						var created = moment(value2.created);
+					
+						if(created > fromRaw && created < toRaw )
 						{
-							self.users[author] = {"counter": {"original": 0, "current": 0}};
+							if(self.users[author] == undefined)
+							{
+								self.users[author] = {"counter": {"original": 0, "current": 0}};
+								
+								$("#usersContainer").append(self.createCard(author, value2.author.avatarUrls["48x48"], 
+																					value2.author.displayName));
+							}
 							
-							$("#usersContainer").append(self.createCard(author, value2.author.avatarUrls["48x48"], 
-																				value2.author.displayName));
+							self.updateUser(author, value.fields.project.key, value2.timeSpentSeconds);
 						}
-						
-						self.updateUser(author, value.fields.project.key, value2.timeSpentSeconds);
 					});
 				});
 				
