@@ -56,7 +56,7 @@
             {
                 var self = this;
                 
-                if(data.fields.timetracking.originalEstimateSeconds > 0)
+                //if(data.fields.timetracking.originalEstimateSeconds > 0)
                 {
                     var table = $("table.burndown");
                     
@@ -72,7 +72,7 @@
                 
                     var row = $("<tr/>");
                     
-                    var estimate = data.fields.timetracking.originalEstimateSeconds / 3600;
+                    var estimate = 1;//data.fields.timetracking.originalEstimateSeconds / 3600;
                     
                     $("<td/>", {html: data.fields.parent.key}).appendTo(row);
                     $("<td/>", {html: data.fields.issuetype.name}).appendTo(row);
@@ -82,10 +82,12 @@
                     $("<td/>", {html: ""}).appendTo(row);
                    
                     var changes = new Array(self.workingDays.length);
-                    var backgrounds = new Array(self.workingDays.length);
+                    var closedTask = new Array(self.workingDays.length);
                     
                     changes.fill(estimate);
-                    //backgrounds.fill("#fff");
+                    closedTask.fill(0);
+
+					var dataSetBurnUp = self.chartData.datasets.find(({ label }) => label === "Burn up");
 
 					var dataSet = self.chartData.datasets.find(({ label }) => label === data.fields.issuetype.name);
 					var dataSetEstimate = self.chartData.datasets.find(({ label }) => label === data.fields.issuetype.name + " Estimate");
@@ -117,8 +119,8 @@
 						  workers: []
 						};
 						
-						dataSetEstimate.data.fill(0);
-						dataSetEstimate.originalData.fill(0);
+						dataSetEstimate.data.fill(-1);
+						dataSetEstimate.originalData.fill(-1);
 						
 						self.chartData.datasets.push(dataSetEstimate);
 						
@@ -131,7 +133,9 @@
 						
 						self.createEstimateResources(data.fields.issuetype.name, dataSetEstimate.borderColor );
 					}
-
+					
+					var whenClosed = -1;
+                    
                     $.each([...data.changelog.histories].reverse(), function(i)
                     {
                         var date = moment(this.created);
@@ -148,11 +152,11 @@
                                     var from = Math.ceil(parseInt(this.from || 0) / 3600);
                                     var to = Math.ceil(parseInt(this.to || 0) / 3600);
                                     
-                                    changes.fill(to, index);
+                                    changes.fill(0, index);
                                 }
                                 else if(this.field == "status" && this.to == 10706)
                                 {
-                                    backgrounds[index] = "#0f0";
+                                    whenClosed = index;
                                 }
 								
 								else if(this.field == "timespent")
@@ -172,17 +176,29 @@
                     {
                         changes.fill("", index + 1);
                     }
-                    
+					
                     $.each(self.workingDays, function(i)
                     {
                         var value = changes[i];
-                        var background = backgrounds[i];
+                        var isClosed = closedTask[i];
 						
 						dataSet.data[i] += changes[i];
 						dataSetEstimate.data[i] += estimate;
 						dataSetEstimate.originalData[i] += estimate;
 						
-                        $("<td/>", {html: value, style: "background-color: " + background }).appendTo(row);
+						var bgcolor = "#fff";
+						
+						if(whenClosed == i)
+						{
+							for(var j = whenClosed; j < self.workingDays.length; ++j)
+							{
+								dataSetBurnUp.data[j] += estimate;
+							}
+							
+							bgcolor = "#0f0";
+						}
+						
+                        $("<td/>", {html: value, style: "background-color: " + bgcolor }).appendTo(row);
                     });
 					
 					self.myChart.update();
@@ -196,12 +212,62 @@
             value: function(data)
             {
                 var self = this;
-                
+
+				{
+					var dataSet = {
+							  label: "Burn up",
+							  fill: true,
+							  backgroundColor: "#F5F5F5",
+							  borderColor: self.getColor(self.chartData.datasets.length),
+							  data: new Array(self.workingDays.length),
+							  cubicInterpolationMode: 'monotone',
+							  tension: 0.4,
+							  order: 998,
+                              hidden: true
+							};
+							
+					dataSet.data.fill(0);
+							
+					self.chartData.datasets.push(dataSet);	
+				}
+
+				{
+					var dataSet = {
+							  label: "Burn up original",
+							  fill: true,
+							  backgroundColor: "#FFF",
+							  borderColor: self.getColor(self.chartData.datasets.length),
+							  data: new Array(self.workingDays.length),
+							  cubicInterpolationMode: 'monotone',
+							  tension: 0.4,
+							  order: 999,
+                              hidden: true
+							};
+							
+					var total = 0;
+					$.each(data.issues, function()
+					{
+                        total += 1
+						if(this.fields.timetracking.originalEstimateSeconds)
+						{
+							//total += this.fields.timetracking.originalEstimateSeconds / 3600;
+						}
+					});
+					
+					var step = total / self.workingDays.length;
+					
+					$.each(self.workingDays, function(i)
+					{
+						dataSet.data[i] = step * (i+1);
+					});
+							
+					self.chartData.datasets.push(dataSet);	
+				}				
+				
                 $.each(data.issues, function()
                 {
                     self.onSubtask(this);
                 });
-                
 				
 				var dataSets = self.chartData.datasets.filter(({ label }) => label.slice(label.length-9,label.length) != " Estimate");
 				
@@ -209,7 +275,10 @@
 				
 				$.each(dataSets, function(j)
 				{
-					dataSets[j].data = dataSets[j].data.slice(0, todayIndex);
+					if(j > 1)
+					{
+						dataSets[j].data = dataSets[j].data.slice(0, todayIndex + 1);
+					}
 				});
 				
 				self.myChart.update();
@@ -229,41 +298,83 @@
 				{
 					this.data = [...this.originalData];
 					this.counter = this.originalData[0];
+                    this.numTasks = this.counter;
+                    this.numResources = 0;
 				});
+				
+				var numDays = 0;
 				
 				$.each(self.workingDays, function(i)
 				{
+					++numDays;
+					
 					$.each(dataSetsEstimate, function(dataset)
 					{
-						var numResources = 0;
-						
 						var resources = self.resources[this.label.slice(0, this.label.length-9)];
 						
 						if(resources != undefined)
 						{
+                            var that = this;
+							
 							$.each(resources, function(resource)
 							{
 								if(this[i] != undefined)
 								{
 									if(this[i].type == "full")
 									{
-										++numResources;
+										++that.numResources;
 									}
 									else if(this[i].type == "mid")
 									{
-										numResources += 0.5;
+										that.numResources += 0.5;
 									}
 								}
 							});
 						}
+					});
+				});
+                
+                $.each(self.workingDays, function(i)
+				{
+					$.each(dataSetsEstimate, function(dataset)
+					{
+						// if(this.label!="Implementation Task Estimate")
+							// return;
 						
-						this.counter -= numResources * 5;
+						var resources = self.resources[this.label.slice(0, this.label.length-9)];
+						
+						if(resources != undefined)
+						{
+                            var that = this;
+                            if(that.numResources > 0)
+                            {
+								var ratio = this.numTasks / this.numResources;
+								
+                                $.each(resources, function(resource)
+                                {
+                                    if(this[i] != undefined)
+                                    {
+                                        if(this[i].type == "full")
+                                        {
+                                            that.counter -= ratio;
+                                        }
+                                        else if(this[i].type == "mid")
+                                        {
+                                            that.counter -= (ratio * 0.5);
+                                        }
+                                    }
+                                });
+                            }
+						}
+						
 						this.data[i] = this.counter;
 						
 						if(this.data[i] < 0)
 							this.data[i] = 0;
 					});
 				});
+				
+				//$(".uncommited-table-container .resources").html("&nbsp;&nbsp;&nbsp;&nbsp;Resources: " + allResources/((0.5+0.5+1+1+0.2) * numDays))
 				
 				self.myChart.update();
             },
@@ -278,7 +389,7 @@
                 
                 $(".main-view").load("js/burndown/template.html", function()
                 {
-                    self.presenter.getSprint(data.board.id);
+                    self.onSprint();
                 });
             },
             enumerable: false
@@ -303,39 +414,31 @@
             enumerable: false
         },
         onSprint: {
-            value: function(data)
+            value: function()
             {
                 var self = this;
                 
-                $.each(data.values, function()
-                {
-                    if(this.state == "active")
-                    {
-                        self.workingDays = self.calcBusinessDays(this.startDate, this.endDate);
+                self.workingDays = self.calcBusinessDays(self.sprint.startDate, self.sprint.endDate);
                         
-                        var table = $("table.burndown");
-                        
-                        var row = $("<tr/>");
-                        
-                        $("<th/>", {html: "US"}).appendTo(row);
-                        $("<th/>", {html: "Type"}).appendTo(row);
-                        $("<th/>", {html: "Task"}).appendTo(row);
-                        $("<th/>", {html: "Summary"}).appendTo(row);
-                        $("<th/>", {html: "Estimated"}).appendTo(row);
-                        $("<th/>", {html: ""}).appendTo(row);
-                        
-                        for(var i = 0; i < self.workingDays.length; ++i)
-                        {
-                            $("<th/>", {html: self.workingDays[i].substring(0, self.workingDays[i].indexOf("/"))}).appendTo(row);
-                        }
-                        
-                        row.appendTo(table);
-						
-						self.getIssues();
-                        
-                        return false;
-                    }
-                });
+				var table = $("table.burndown");
+				
+				var row = $("<tr/>");
+				
+				$("<th/>", {html: "US"}).appendTo(row);
+				$("<th/>", {html: "Type"}).appendTo(row);
+				$("<th/>", {html: "Task"}).appendTo(row);
+				$("<th/>", {html: "Summary"}).appendTo(row);
+				$("<th/>", {html: "Estimated"}).appendTo(row);
+				$("<th/>", {html: ""}).appendTo(row);
+				
+				for(var i = 0; i < self.workingDays.length; ++i)
+				{
+					$("<th/>", {html: self.workingDays[i].substring(0, self.workingDays[i].indexOf("/"))}).appendTo(row);
+				}
+				
+				row.appendTo(table);
+				
+				self.getIssues();
                 
                 self.setupChart();
             },
@@ -402,7 +505,7 @@
 						display: true,
 						title: {
 						  display: true,
-						  text: 'Hours'
+						  text: 'Tasks'
 						}
 					  }
 					}
@@ -445,7 +548,7 @@
         getColor : {
             value: function(i)
             {
-                var colors = ["#1e88e5", "#90caf9", "#ffb300", "#ffd54f", "#8e24aa", "#ce93d8", "#f4511e", "#ff8a65"];
+                var colors = ["#c0c0c0", "#FAFAFA", "#1e88e5", "#90caf9", "#ffb300", "#ffd54f", "#8e24aa", "#ce93d8", "#f4511e", "#ff8a65"];
 				
 				if(i >= colors.length)
 					return colors[0];

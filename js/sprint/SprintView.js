@@ -34,7 +34,7 @@
 				
                 $(document).on("active_sprint", function (evt, data)
                 {
-                    self.changeSprint(data.id, data.name);
+                    self.changeSprint(data);
                 });
             },
             enumerable: false
@@ -51,12 +51,12 @@
 					var clone = self.boardTemplate.clone();
 					clone.html(this.name);
 					
-					var id = this.id;
-					var name = this.name;
+					var sprint = this;
 					
 					clone.click(function()
 					{
-						self.changeSprint(id, name);
+						self.changeSprint(sprint);
+						
 						self.dialog[0].close();
 					}).prependTo(boards);
 				});
@@ -84,12 +84,12 @@
             enumerable: false
         },
         changeSprint : {
-            value: function(id, name)
+            value: function(sprint)
             {
                 var self = this;
                 
 				$(".playlists > h2").html("");
-				$("<div/>", {class: "title", html: name}).appendTo($(".playlists > h2"));
+				$("<div/>", {class: "title", html: sprint.name}).appendTo($(".playlists > h2"));
 				$(".playlists-list").html("");
 				
 				$("<i/>", {class: "iconMenu fas fa-exchange-alt"}).click(function()
@@ -97,12 +97,12 @@
 				   self.getSprints();
 				}).appendTo($(".playlists > h2"));
 				
-				$(document).trigger("sprint", {id: id, name: name});
+				$(document).trigger("sprint", sprint);
 				
 				$(".main-view").html("");
 				$(".menu-item").removeClass("active");
 				
-				self.presenter.getIssues(this.board.id, id, self.issueTypes);
+				self.presenter.getIssues(this.board.id, sprint.id, self.issueTypes);
             },
             enumerable: false
         },

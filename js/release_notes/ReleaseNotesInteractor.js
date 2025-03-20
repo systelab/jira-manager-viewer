@@ -105,7 +105,8 @@
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/api/2/search/?jql=project=" + project + " and  \"Versión de Cierre (migrated)[Version Picker (multiple versions)]\"=\"" + version + "\"",
+					url: credentials.server + "/rest/api/2/search/?jql=project=" + project + 
+										" and fixVersion=\"" + version + "\"&maxResults=1000",
                     beforeSend: function(xhr)
 					{
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);

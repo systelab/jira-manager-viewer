@@ -56,12 +56,12 @@
 
 .uncommited-table-container .estimate_resources table div.mid:before
 {
-	content: url("/img/part.png");
-    position: absolute;
-    width: 16;
-    height: 16;
-    margin-left: 18;
-    margin-top: 18;
+	/* content: url("/img/part.png"); */
+    /* position: absolute; */
+    /* width: 16; */
+    /* height: 16; */
+    /* margin-left: 18; */
+    /* margin-top: 18; */
 }
 
 .uncommited-table-container .estimate_resources table div
@@ -72,6 +72,11 @@
 .uncommited-table-container .estimate_resources table div.no
 {
 	opacity:0.1;
+}
+
+.uncommited-table-container .estimate_resources table div.mid
+{
+	opacity:0.5;
 }
 
 .resource-dialog

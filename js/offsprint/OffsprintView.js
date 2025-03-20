@@ -296,7 +296,24 @@
 						  title: {
 							display: true,
 							text: 'Hours in Offsprints'
-						  }
+						  },
+                          legend: {
+                                display: false
+                            },
+                          datalabels: {
+                            display: "auto",
+                            align: 'end',
+                            offset:120,
+                            backgroundColor: '#F2F2F2',
+                            borderRadius: 3,
+                            rotation: 3,
+                            font: {
+                              size: 11,
+                            },
+                            formatter: function(value, context) {
+                              return context.chart.data.labels[context.dataIndex] + ': ' + Math.round(value) + 'h';
+                            }
+                          }
 						}
 					}
 				});
@@ -333,7 +350,22 @@
 						  title: {
 							display: true,
 							text: 'Committers in Offsprints'
-						  }
+						  },
+                          legend: {
+                                display: false
+                            },
+                          datalabels: {
+                            display: "auto",
+                            align: 'end',
+                            backgroundColor: '#F2F2F2',
+                            borderRadius: 3,
+                            font: {
+                              size: 14,
+                            },
+                            formatter: function(value, context) {
+                              return context.chart.data.labels[context.dataIndex] + ': ' + Math.round(value) + 'h';
+                            }
+                          }
 						}
 					}
 				});

@@ -2,7 +2,19 @@
     <div class="playlist-header">
     </div>
     <div class="uncommited-table-container">
-        <table class="planning" border=1></table>
-        <table class="yield" border=1></table>
+        <p>Planning</p>
+		<table class="planning" border=1></table>
+		<br>
+        <p>Yield</p>
+		<table class="yield" border=1></table>
+		<br>
+		<p>Effort by User Story</p>
+        <table class="percent" border=1></table>
+        
+		<div style="width:800; height: 800px; max-width: 800px; max-height: 800px">
+            <canvas id="effortByUserStoryChart"></canvas>
+        </div>
+		
+		<canvas id="effortByUserStoryTypeChart" width="500" height="500"></canvas>
     </div>
 </div>

@@ -138,7 +138,22 @@
             {
 				$.each(data.issues, function(key, value)
 				{
-					$("<div/>", {html: value.key + ": " + value.fields.summary}).appendTo($("#version" + versionId))
+					
+					if(value.fields.parent != undefined && value.fields.parent.fields.issuetype.name=="Epic")
+					{console.log(value.fields.parent.fields.summary)
+						var epic = $("#version" + versionId).find("." + value.fields.parent.id);
+						
+						if(epic.length == 0)
+						{
+							epic = $("<div/>", {class: value.fields.parent.id, html: "<span>"+value.fields.parent.fields.summary+"</span>&nbsp;&nbsp;&nbsp;<span class='size'>0</span>"});
+							
+							epic.appendTo($("#version" + versionId));
+						}
+						
+						epic.find("span.size").html(parseInt(epic.find("span.size").text()) + value.fields.customfield_10003);
+					}
+					
+					//$("<div/>", {html: value.key + ": " + value.fields.summary}).appendTo($("#version" + versionId))
 				});
             },
             enumerable: false

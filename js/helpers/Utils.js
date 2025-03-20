@@ -30,6 +30,8 @@ $(document).ready(function ()
     {
        window.maximize();   
     });
+
+   // Chart.register(ChartDataLabels);
 });
 
 Number.prototype.pad = function(size) {

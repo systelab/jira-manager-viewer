@@ -49,7 +49,7 @@
             {
                 if(data.values.length > 0)
 				{
-					$(document).trigger("active_sprint", {id: data.values[0].id, name: data.values[0].name});
+					$(document).trigger("active_sprint", data.values[0]);
 				}
             },
             enumerable: false
