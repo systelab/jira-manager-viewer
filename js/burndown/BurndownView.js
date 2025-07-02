@@ -16,6 +16,7 @@
 
                 this.issues = [];
                 this.resources = {};
+				this.userStories = {};
 				
                 $(".playlists-list").on("loaded", function (evt, data)
                 {
@@ -281,9 +282,10 @@
 					}
 				});
 				
-				self.myChart.update();
-				
+				self.createUserStoriesScope("User Stories", "#B0B0B0");
+				self.myChart.update();				
 				self.computeEstimate();
+				self.computeUSEstimations();
             },
             enumerable: false
         },
@@ -454,7 +456,7 @@
                 {
                     issues.push(this.key);
                 });
-                
+                		
                 self.presenter.getIssues(issues);
             },
             enumerable: false
@@ -467,54 +469,62 @@
             enumerable: false
         },
         setupChart : {
-            value: function()
-            {
-                const DATA_COUNT = 7;
-				const NUMBER_CFG = {count: DATA_COUNT, min: -100, max: 100};
+            value: function () {
+                const labels = Array.from(this.workingDays, x => moment(x, "DD/MM/YYYY").format("DD/MM"));
+                this.chartData = {
+                    labels: labels,
+                    datasets: []
+                };
 
-				const labels = Array.from(this.workingDays, x => moment(x, "DD/MM/YYYY").format("DD/MM"));
-				this.chartData = {
-				  labels: labels,
-				  datasets: []
-				};
-				
-				const config = {
-				  type: 'line',
-				  data: this.chartData,
-				  options: {
-					responsive: true,
-					plugins: {
-					  title: {
-						display: true,
-						text: 'Burndown'
-					  },
-					},
-					interaction: {
-					  mode: 'index',
-					  intersect: false
-					},
-					scales: {
-					  x: {
-						display: true,
-						title: {
-						  display: true,
-						  text: 'Days'
-						}
-					  },
-					  y: {
-						display: true,
-						title: {
-						  display: true,
-						  text: 'Tasks'
-						}
-					  }
-					}
-				  },
-				};
-				
-				const ctx = document.getElementById('myChart');
-				this.myChart = new Chart(ctx, config);
-				
+                const config = {
+                    type: 'line',
+                    data: this.chartData,
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Burndown'
+                            },
+                            datalabels: {
+                                display: false
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: 'Days'
+                                }
+                            },
+                            y: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: 'Tasks'
+                                }
+                            },
+							y2: {
+								display: false,
+								position: 'right',
+								min: 0,
+								max: 100,
+								grid: {
+									drawOnChartArea: false
+								}
+							}
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                };
+
+                const ctx = document.getElementById('myChart');
+                this.myChart = new Chart(ctx, config);
             },
             enumerable: false
         },
@@ -628,10 +638,218 @@
             },
             enumerable: false
         },
+		computeUSEstimations: {
+			value: function () {
+				var self = this;
+
+				var usEstimations = {};
+
+				$.each(self.issues, function () 
+				{
+					var usKey = this.key;
+
+					if (this.fields.subtasks && this.fields.subtasks.length > 0) 
+					{
+						if (!usEstimations[usKey]) 
+						{
+							usEstimations[usKey] = 0;
+						}
+						usEstimations[usKey] += this.fields.subtasks.length;
+					}
+				});
+
+				$.each(self.userStories, function (snowId) 
+				{
+					if (usEstimations[snowId]) 
+					{
+						self.userStories[snowId].totalTasks = usEstimations[snowId];
+					}
+					else
+					{
+						self.userStories[snowId].totalTasks = 0;
+					}
+				});
+
+				self.updateUSChart();
+			},
+			enumerable: false
+		},
+		updateEstimateUSResources : {
+            value: function(task, table)
+            {
+				var self = this;
+				
+				table.html("");
+				
+                $.each(this.userStories, function(snowId, days) {
+                    var tr = $("<tr/>", { id: snowId });
+
+                    $.each(days, function(j, dayData) {
+                        var td = $("<td/>");
+
+                        var className = dayData.type || "no";
+
+                        var container = $("<div/>", { class: className }).click(function() {
+                            if ($(this).hasClass("full"))
+							{
+                                self.userStories[snowId][j].type = "no";
+                                $(this).removeClass("full").addClass("no");
+                            } 
+							else
+							{
+                                $.each(self.userStories[snowId], function (index, day) {
+                                    if (day.type === "full") 
+									{
+                                        day.type = "no";
+                                        table.find(`tr#${snowId} td:eq(${index}) div`).removeClass("full").addClass("no");
+                                    }
+                                });
+
+                                self.userStories[snowId][j].type = "full";
+                                $(this).removeClass("no").addClass("full");
+                            }
+
+                            self.computeUSEstimations();
+                            self.save();
+                        }).appendTo(td);
+
+                        $("<span/>", { class: "us-span", title: snowId, text: snowId.replace("SNOW-", "") }).appendTo(container);
+
+                        td.appendTo(tr);
+                    });
+
+                    tr.appendTo(table);
+                });
+            },
+            enumerable: false
+        },
+		createUserStoriesScope : {
+			value: function(name, color)
+			{
+				var self = this;
+				
+				var table = $("<table/>", {"class": "assigned ", style: "background-color:" + color}).data("task", name);
+				
+				var resourceContainer = $("<div/>", {class: "resourceContainer"});
+				
+				$("<i/>", {class: "iconMenu fas fa-exchange-alt"}).click(function()
+                {
+					self.showUSDialog(name, table);
+                }).appendTo(resourceContainer);
+				
+				table.appendTo(resourceContainer);
+				
+				resourceContainer.appendTo(".uncommited-table-container .estimate_resources");
+				
+				self.updateEstimateUSResources(name, table);
+			}
+		},
+		updateUSChart: {
+			value: function () {
+				var self = this;
+
+				var usDataset = self.chartData.datasets.find(({ label }) => label === "User Stories");
+				if (!usDataset) 
+				{
+					usDataset = 
+					{
+						label: "User Stories",
+						data: new Array(self.workingDays.length).fill(null),
+						backgroundColor: "#B0B0B0",
+						borderColor: "#B0B0B0",
+						borderDash: [5, 5],
+						pointRadius: 0,
+						fill: false,
+						tension: 0.4,
+						spanGaps: true,
+						yAxisID: 'y2',
+						datalabels: {
+							display: function(context) {
+								return context.dataIndex !== 0;
+							},
+							align: 'center',
+							anchor: 'end',
+							color: '#B0B0B0',
+							backgroundColor: '#fff',
+							borderColor: '#B0B0B0',
+							borderRadius: 4,
+							borderWidth: 1,
+							font: {
+								weight: 'bold'
+							},
+							formatter: function(value, context) {
+								return	context.dataIndex !== 0 && context.dataset.snowIds &&
+										context.dataset.snowIds[context.dataIndex]
+										? context.dataset.snowIds[context.dataIndex]
+										: '';
+							}
+						}
+					};
+					self.chartData.datasets.push(usDataset);
+				}
+
+				usDataset.data.fill(null);
+				var additionalData = [];
+
+				var totalTasksAllUS = 0;
+				$.each(self.userStories, function (snowId) {
+					totalTasksAllUS += self.userStories[snowId].totalTasks || 0;
+				});
+
+				$.each(self.userStories, function (snowId, days) 
+				{
+					var totalTasks = self.userStories[snowId].totalTasks || 0;
+					var percentage = totalTasksAllUS > 0 ? ((totalTasks / totalTasksAllUS) * 100).toFixed(2) : 0;
+					var mostRecentFullDay = -1;
+
+					$.each(days, function (j, dayData)
+					{
+						if (dayData.type === "full")
+						{
+							mostRecentFullDay = j;
+						}
+					});
+
+					if (mostRecentFullDay !== -1) 
+					{
+						additionalData.push({
+							day: mostRecentFullDay,
+							percentage: parseFloat(percentage),
+							snowId: snowId.replace("SNOW-", ""),
+							totalTasks: totalTasks
+						});
+					}
+				});
+
+				additionalData.sort((a, b) => a.day - b.day);
+
+				var cumulativePercentage = 0;
+				additionalData.forEach((data, index) => 
+				{
+					cumulativePercentage += data.percentage;
+					data.cumulativePercentage = cumulativePercentage.toFixed(2);
+				});
+
+				usDataset.data[0] = 0;
+				additionalData.forEach(data => {
+					usDataset.data[data.day] = parseFloat(data.cumulativePercentage); // Asigna el porcentaje acumulativo al día correspondiente
+				});
+
+				usDataset.snowIds = new Array(self.workingDays.length).fill('');
+				additionalData.forEach(data => 
+				{
+					usDataset.snowIds[data.day] = data.snowId;
+				});
+				
+				self.myChart.update();
+			},
+			enumerable: false
+		},
         onLoad : {
             value: function(data)
             {
-				this.resources = data;
+				this.resources = data.resources || {};
+        		this.userStories = data.userStories || {};
 				
 				this.presenter.getSettings();
             },
@@ -669,6 +887,63 @@
             },
             enumerable: false
         },
+        showUSDialog : {
+            value: function(task, table)
+            {
+				var self = this;
+				
+				$(".modal-dialog").load("js/burndown/resources.html", function()
+				{
+					self.template = $(this);
+					
+					self.resourcesTemplate = self.template.find(".body li").detach();
+					
+					self.dialog = $(this).find(".resource-dialog");
+					
+					self.dialog.find(".name").html(task + " Resources")
+					
+					self.dialog.find(".mdl-button.close").click(function()
+					{
+						self.dialog[0].close();
+					});
+					
+					self.dialog.find(".mdl-button.confirm").click(function()
+					{
+						self.UScommit(task, table);
+					});
+				   
+					self.dialog[0].showModal();
+					
+					self.createUSListOnDialog(self.issues);
+				});
+            },
+            enumerable: false
+        },
+		createUSListOnDialog : {
+			value: function(data)
+			{
+				var self = this;
+				
+				this.users = [];
+				
+				var resources = this.template.find(".body");
+				
+				$.each(data, function()
+				{					
+					var clone = self.resourcesTemplate.clone();
+					clone.html("<span class='status_id'>" + this.key +"</span>" + this.fields.summary);
+				
+					clone.click(function()
+					{
+						$(this).toggleClass("active");
+						var cnt = self.dialog.find(".body .context-menu-item.active").length;
+						self.dialog.find(".selection").html(cnt + " elements selected");
+					}).appendTo(resources);
+					
+				});
+			},
+			enumerable: false
+		},
         onSave : {
             value: function(data)
             {
@@ -679,7 +954,10 @@
         save : {
             value: function()
             {
-				this.presenter.save(this.board.name, this.sprint.name, this.resources);
+				this.presenter.save(this.board.name, this.sprint.name, {
+					resources: this.resources,
+					userStories: this.userStories
+				});
             },
             enumerable: false
         },
@@ -709,6 +987,36 @@
 				self.resources[task] = resources;
 				
 				self.updateEstimateResources(task, table);
+				self.save();
+				
+				this.dialog[0].close();
+            },
+            enumerable: false
+        },
+		
+        UScommit : {
+            value: function(task, table)
+            {
+                var self = this;
+                
+				table.html("");
+				
+				var userStories = {};
+				
+                $.each($(this.dialog).find(".body .context-menu-item.active"), function()
+                {
+					var snowId = $(this).find(".status_id").text();	
+					userStories[snowId] = new Array();
+
+					$.each(self.workingDays, function(i)
+                    {
+						userStories[snowId].push({index: i + 1, snowId: snowId, "type": "no"});
+                    });
+                });
+				
+				self.userStories = userStories;
+				
+				self.updateEstimateUSResources(task, table);
 				self.save();
 				
 				this.dialog[0].close();
