@@ -49,6 +49,21 @@
                         self.presenter.load(self.board.name, self.sprint.name);
                     });
                 });
+
+
+				this.visibleCharts = {};
+				$(document).on("click", "#saveChartButton", function() 
+				{
+                    var visibles = {};
+                    $.each(self.chartData.datasets, function(i, ds) 
+					{						
+						var meta = self.myChart.getDatasetMeta(i);
+                        visibles[ds.label] = !(ds.hidden === true || meta.hidden === true);
+                    });
+
+                    self.visibleCharts = JSON.stringify(visibles);
+                    self.save();
+				});
             },
             enumerable: false
         },
@@ -283,9 +298,11 @@
 				});
 				
 				self.createUserStoriesScope("User Stories", "#B0B0B0");
-				self.myChart.update();				
+				self.myChart.update();
 				self.computeEstimate();
-				self.computeUSEstimations();
+				self.computeUSEstimations();				
+				self.computeOffSprintHours(data.issues);        
+				self.loadVisibleCharts();
             },
             enumerable: false
         },
@@ -850,7 +867,7 @@
             {
 				this.resources = data.resources || {};
         		this.userStories = data.userStories || {};
-				
+				this.visibleCharts = data.visibleCharts || {};
 				this.presenter.getSettings();
             },
             enumerable: false
@@ -956,7 +973,8 @@
             {
 				this.presenter.save(this.board.name, this.sprint.name, {
 					resources: this.resources,
-					userStories: this.userStories
+					userStories: this.userStories,
+					visibleCharts: this.visibleCharts
 				});
             },
             enumerable: false
@@ -1022,8 +1040,120 @@
 				this.dialog[0].close();
             },
             enumerable: false
-        }
-    });
+        },
+        createOffSprintHoursDataset: {
+            value: function() 
+			{
+                var self = this;
+                
+                var offSprintHoursDataset = self.chartData.datasets.find(({ label }) => label === "Off-Sprint Hours");
+                
+                if (!offSprintHoursDataset) {
+                    offSprintHoursDataset = {
+                        label: "Off-Sprint Hours",
+                        data: new Array(self.workingDays.length).fill(0),
+                        backgroundColor: "#ffffff",
+                        borderColor: "#ff6b6b",
+                        pointRadius: 4,
+                        pointBorderWidth: 2,
+                        pointStyle: 'rectRot',
+						borderWidth: 0,
+                        fill: false,
+                        tension: 0,
+                        showLine: false,
+                        spanGaps: true,
+                        yAxisID: 'y'
+                    };
+                    
+                    self.chartData.datasets.push(offSprintHoursDataset);
+                }
+                
+                return offSprintHoursDataset;
+            },
+            enumerable: false
+        },
+		computeOffSprintHours: {
+            value: function(data) 
+			{
+                var self = this;                
+                
+				var offSprintHoursDataset = self.createOffSprintHoursDataset();
+                offSprintHoursDataset.data.fill(0);
+                
+                var todayIndex = self.workingDays.findIndex((element) => element == moment().format('DD/MM/YYYY'));
+                offSprintHoursDataset.data = offSprintHoursDataset.data.slice(0, todayIndex + 1);
+
+				$.each(self.workingDays, function(dayIndex, day) 
+				{
+                    if (todayIndex > -1 && dayIndex > todayIndex) 
+					{
+                        return false;
+                    }
+                    
+                    var totalHoursForDay = 0;
+                    
+                    $.each(data, function(index, item) 
+					{
+                        if (item && item.fields && item.fields.issuetype && item.fields.issuetype.name === "Off-Sprint task") 
+						{
+                            var hoursForDay = self.processOffSprintSubtask(item, dayIndex);
+                            totalHoursForDay += hoursForDay;
+                        }
+                    });
+                    
+                    offSprintHoursDataset.data[dayIndex] = totalHoursForDay;
+                });
+                
+                self.myChart.update();
+            },
+            enumerable: false
+        },
+		processOffSprintSubtask: {
+            value: function(subtaskData, dayIndex) 
+			{
+                var self = this;
+        
+				var hoursForDay = 0;
+                var targetDay = self.workingDays[dayIndex];
+        
+                if (subtaskData.fields && subtaskData.fields.worklog && subtaskData.fields.worklog.worklogs) 
+				{
+                    $.each(subtaskData.fields.worklog.worklogs, function() 
+					{
+                        var worklogDate = moment(this.started);
+                        var worklogDayFormatted = worklogDate.format('DD/MM/YYYY');
+                        
+                        if (worklogDayFormatted === targetDay) 
+						{
+                            var hoursWorked = this.timeSpentSeconds / 3600;
+                            hoursForDay += hoursWorked;
+                        }
+                    });
+                }
+        
+                return hoursForDay;
+            },
+            enumerable: false
+        },
+		loadVisibleCharts: {
+			value: function() 
+			{
+				var self = this;
+
+				var visibles = JSON.parse(self.visibleCharts);
+                $.each(self.chartData.datasets, function(i, dataset) 
+				{
+                    if (visibles.hasOwnProperty(dataset.label)) 
+					{
+						dataset.hidden = !visibles[dataset.label];
+                    }
+                });
+
+				self.myChart.update();
+			},
+			enumerable: false
+		}
+	});
 
     views.BurndownView = BurndownView;
 })(viewer.views);
