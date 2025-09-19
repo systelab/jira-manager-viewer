@@ -19,7 +19,7 @@
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/api/2/search/?jql=parent in (" + issues.toString() + ")+order+by+updated&fields=assignee,status,parent,summary,issuetype,worklog,timetracking&maxResults=" + pagination + "&startAt=" + startAt+"&expand=changelog",
+					url: credentials.server + "/rest/api/3/search/jql?jql=parent in (" + issues.toString() + ")+order+by+updated&fields=assignee,status,parent,summary,issuetype,worklog,timetracking&maxResults=" + pagination + "&startAt=" + startAt+"&expand=changelog",
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
@@ -53,7 +53,7 @@
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/api/2/user/assignable/search?issueKey=" + issue,
+					url: credentials.server + "/rest/api/3/user/assignable/search?issueKey=" + issue,
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
