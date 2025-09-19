@@ -17,6 +17,8 @@
                 this.issues = [];
                 this.resources = {};
 				this.userStories = {};
+				this.backupDatasets = [];
+				this.processTodayData = false;
 				
                 $(".playlists-list").on("loaded", function (evt, data)
                 {
@@ -54,19 +56,86 @@
 				this.visibleCharts = {};
 				$(document).on("click", "#saveChartButton", function() 
 				{
-                    var visibles = {};
-                    $.each(self.chartData.datasets, function(i, ds) 
-					{						
-						var meta = self.myChart.getDatasetMeta(i);
-                        visibles[ds.label] = !(ds.hidden === true || meta.hidden === true);
-                    });
+					if (!self.isGlobalBurndownView)
+					{
+						self.saveVisibleCharts();
+					}
+				});
+				//switch charts
+				this.isGlobalBurndownView = false;
+				
+				$(document).on("click", "#switchChartButton", function()
+				{
+					if (!self.isGlobalBurndownView)
+					{
+						self.saveVisibleCharts();
+					}
 
-                    self.visibleCharts = JSON.stringify(visibles);
-                    self.save();
+					self.isGlobalBurndownView = !self.isGlobalBurndownView;
+
+					var copyDataset = self.myChart.data.datasets.slice();					
+					self.myChart.data.datasets = self.backupDatasets.slice();
+					self.backupDatasets = copyDataset.slice();
+					
+					if (!self.isGlobalBurndownView)
+					{
+						self.loadVisibleCharts();
+					}
+					else
+					{
+						self.myChart.update();
+					}
 				});
             },
             enumerable: false
         },
+		saveVisibleCharts : {
+            value: function()
+            {
+                var self = this;
+
+				var visibles = {};
+				$.each(self.myChart.data.datasets, function(i, ds) 
+				{						
+					var meta = self.myChart.getDatasetMeta(i);
+
+					var isVisible = false;
+
+					if (meta && meta.hidden !== undefined && meta.hidden !== null)
+					{
+						isVisible = !meta.hidden;
+					}
+					else
+					{
+						isVisible = !ds.hidden;
+					}
+
+					visibles[ds.label] = isVisible;
+				});
+
+				self.visibleCharts = JSON.stringify(visibles);
+				self.save();
+            },
+			enumerable: false
+        },
+		loadVisibleCharts: {
+			value: function() 
+			{
+				var self = this;
+
+				var visibles = JSON.parse(self.visibleCharts);
+                $.each(self.myChart.data.datasets, function(i, dataset) 
+				{
+                    if (visibles.hasOwnProperty(dataset.label)) 
+					{
+						dataset.hidden = !visibles[dataset.label];
+                    }
+                });
+
+				self.myChart.update();
+			},
+			enumerable: false
+		},
         onSubtask : {
             value: function(data)
             {
@@ -89,7 +158,6 @@
                     var row = $("<tr/>");
                     
                     var estimate = 1;//data.fields.timetracking.originalEstimateSeconds / 3600;
-                    
                     $("<td/>", {html: data.fields.parent.key}).appendTo(row);
                     $("<td/>", {html: data.fields.issuetype.name}).appendTo(row);
                     $("<td/>", {html: data.key}).appendTo(row);
@@ -137,7 +205,6 @@
 						
 						dataSetEstimate.data.fill(-1);
 						dataSetEstimate.originalData.fill(-1);
-						
 						self.chartData.datasets.push(dataSetEstimate);
 						
 						self.myChart.update();
@@ -195,9 +262,14 @@
 					
                     $.each(self.workingDays, function(i)
                     {
+						var todayIndex = self.workingDays.findIndex(day => day === moment().format('DD/MM/YYYY'));
+						if (!self.processTodayData && i >= todayIndex)
+						{
+							return false;
+						}
+
                         var value = changes[i];
                         var isClosed = closedTask[i];
-						
 						dataSet.data[i] += changes[i];
 						dataSetEstimate.data[i] += estimate;
 						dataSetEstimate.originalData[i] += estimate;
@@ -279,7 +351,7 @@
 							
 					self.chartData.datasets.push(dataSet);	
 				}				
-				
+
                 $.each(data.issues, function()
                 {
                     self.onSubtask(this);
@@ -293,7 +365,8 @@
 				{
 					if(j > 1)
 					{
-						dataSets[j].data = dataSets[j].data.slice(0, todayIndex + 1);
+						var maxIndex = self.processTodayData ? todayIndex + 1 : todayIndex;
+						dataSets[j].data = dataSets[j].data.slice(0, maxIndex);
 					}
 				});
 				
@@ -303,9 +376,55 @@
 				self.computeUSEstimations();				
 				self.computeOffSprintHours(data.issues);        
 				self.loadVisibleCharts();
+				self.createInitialValues(data.issues);
+				self.createGlobalChartDataSets();
             },
             enumerable: false
         },
+        createInitialValues: {
+            value: function(totalIssues)
+            {
+                var self = this;
+
+				var impl = 0;
+				var qa = 0;
+				var auto = 0;
+
+				$.each(totalIssues, function()
+				{
+					if (this.fields.issuetype.name == "Implementation Task")
+						impl++;
+					else if (this.fields.issuetype.name == "sub-Tarea QA")
+						qa++;
+					else if (this.fields.issuetype.name == "sub-Tarea Test Auto")
+						auto++;
+				});
+
+				self.workingDays.unshift("START");
+				self.chartData.labels.unshift("START");	
+
+				$.each(self.chartData.datasets, function(i, dataset) {
+					dataset.data.push(null);
+				});
+
+				
+				function shiftDaysPatch(self, datasetName, initialValue) {
+					var curr = self.chartData.datasets.find(({ label }) => label === datasetName);
+					var estimate = self.chartData.datasets.find(({ label }) => label === datasetName + " Estimate");
+					curr.data = [initialValue].concat(curr.data.slice(0, -1));
+					if (estimate)
+					estimate.data = [initialValue].concat(estimate.data.slice(0, -1));
+				}
+
+				shiftDaysPatch(self, "Implementation Task", impl);
+				shiftDaysPatch(self, "sub-Tarea QA", qa);
+				shiftDaysPatch(self, "sub-Tarea Test Auto", auto);
+				shiftDaysPatch(self, "Off-Sprint Hours", 0);
+
+				self.myChart.update();
+			},
+			enumerable: false
+		},
         computeEstimate : {
             value: function()
             {
@@ -385,9 +504,7 @@
                                 });
                             }
 						}
-						
 						this.data[i] = this.counter;
-						
 						if(this.data[i] < 0)
 							this.data[i] = 0;
 					});
@@ -534,6 +651,19 @@
 								grid: {
 									drawOnChartArea: false
 								}
+							},
+							yOffSprintHours: {
+								display: true,
+								min: 0,
+								max: 30,
+								position: 'right',
+								grid: {
+									display: false
+								},
+								title: {
+									display: true,
+									text: 'Off Sprint Hours'
+								}
 							}
                         }
                     },
@@ -669,9 +799,12 @@
 					{
 						if (!usEstimations[usKey]) 
 						{
-							usEstimations[usKey] = 0;
+							usEstimations[usKey] = { totalTasks: 0 };
 						}
-						usEstimations[usKey] += this.fields.subtasks.length;
+
+						usEstimations[usKey].totalTasks = this.fields.subtasks.length;
+						usEstimations[usKey].isClosed = this.fields.status.name === "Closed" ? 
+							moment(this.fields.statuscategorychangedate).format("DD/MM/YYYY") : null;
 					}
 				});
 
@@ -679,7 +812,8 @@
 				{
 					if (usEstimations[snowId]) 
 					{
-						self.userStories[snowId].totalTasks = usEstimations[snowId];
+						self.userStories[snowId].totalTasks = usEstimations[snowId].totalTasks;
+						self.userStories[snowId].isClosed = usEstimations[snowId].isClosed;
 					}
 					else
 					{
@@ -777,7 +911,7 @@
 						borderDash: [5, 5],
 						pointRadius: 0,
 						fill: false,
-						tension: 0.4,
+						tension: 0,
 						spanGaps: true,
 						yAxisID: 'y2',
 						datalabels: {
@@ -823,7 +957,7 @@
 					{
 						if (dayData.type === "full")
 						{
-							mostRecentFullDay = j;
+							mostRecentFullDay = j + 1; // + 1 because of the START label in the X axis.
 						}
 					});
 
@@ -857,7 +991,7 @@
 				{
 					usDataset.snowIds[data.day] = data.snowId;
 				});
-				
+
 				self.myChart.update();
 			},
 			enumerable: false
@@ -1033,7 +1167,6 @@
                 });
 				
 				self.userStories = userStories;
-				
 				self.updateEstimateUSResources(task, table);
 				self.save();
 				
@@ -1062,7 +1195,7 @@
                         tension: 0,
                         showLine: false,
                         spanGaps: true,
-                        yAxisID: 'y'
+                        yAxisID: 'yOffSprintHours'
                     };
                     
                     self.chartData.datasets.push(offSprintHoursDataset);
@@ -1135,21 +1268,139 @@
             },
             enumerable: false
         },
-		loadVisibleCharts: {
+		createGlobalChartDataSets: {
 			value: function() 
 			{
 				var self = this;
 
-				var visibles = JSON.parse(self.visibleCharts);
-                $.each(self.chartData.datasets, function(i, dataset) 
-				{
-                    if (visibles.hasOwnProperty(dataset.label)) 
-					{
-						dataset.hidden = !visibles[dataset.label];
-                    }
-                });
+				// Global burndown datasets
+				var burndownData = new Array(self.workingDays.length).fill(null);
+				var burndownDataEstimate = new Array(self.workingDays.length).fill(null);
 
-				self.myChart.update();
+				const targetLabels = 
+				{
+					current: ["Implementation Task", "sub-Tarea QA", "sub-Tarea Test Auto"],
+					estimate: ["Implementation Task Estimate", "sub-Tarea QA Estimate", "sub-Tarea Test Auto Estimate"]
+				};
+
+				$.each(self.chartData.datasets, function(i, dataset)
+				{
+					if (targetLabels.current.includes(dataset.label))
+					{
+						for (var j = 0; j < dataset.data.length; j++)
+						{
+							burndownData[j] += dataset.data[j];
+						}
+					}
+					else if (targetLabels.estimate.includes(dataset.label))
+					{
+						for (var j = 0; j < dataset.data.length; j++)
+						{
+							burndownDataEstimate[j] += dataset.data[j];
+						}						
+					}
+				});
+
+				// Imported datasets (Off-Sprint Hours and User Stories)
+				const offsprintDataSet = $.extend(true, {}, self.chartData.datasets.find(({ label }) => label === "Off-Sprint Hours"));
+				offsprintDataSet.borderColor = "#7da7dfff";
+				offsprintDataSet.backgroundColor = "#7da7dfff";
+				offsprintDataSet.hidden = false;
+
+				const userStoriesDataSet = $.extend(true, {}, self.chartData.datasets.find(({ label }) => label === "User Stories"));
+				var userStoriesColor = "#fdb13e83";
+				userStoriesDataSet.borderColor = userStoriesColor;
+				userStoriesDataSet.backgroundColor = userStoriesColor;
+				userStoriesDataSet.datalabels.color = userStoriesColor;
+				userStoriesDataSet.datalabels.borderColor = userStoriesColor;
+				userStoriesDataSet.hidden = false;
+
+				var pointRadiusArray = new Array(userStoriesDataSet.data.length).fill(0);				
+				var lastValue = 0;
+				userStoriesDataSet.data.forEach((value, i, arr) =>
+				{
+					if (value !== null && value !== undefined && value !== 0)
+					{
+						pointRadiusArray[i] = 1;
+						lastValue = value;
+					}
+					arr[i] = lastValue;
+				});
+
+				userStoriesDataSet.pointRadius = pointRadiusArray;
+				userStoriesDataSet.datalabels.display = function(context) 
+				{
+					return context.dataset.pointRadius[context.dataIndex] > 0;
+				};
+
+				// US % dataset
+				const percentagePerUS = self.chartData.datasets.find(({ label }) => label === "User Stories");
+				var usCompletedDataSet = $.extend(true, {}, self.chartData.datasets.find(({ label }) => label === "User Stories"));
+				usCompletedDataSet.data = new Array(percentagePerUS.data.length).fill(null);
+				usCompletedDataSet.label = "% US Completed";
+				usCompletedDataSet.backgroundColor = userStoriesColor;
+				usCompletedDataSet.borderColor = userStoriesColor;
+				usCompletedDataSet.fill = true;
+				usCompletedDataSet.pointRadius = 0;
+				usCompletedDataSet.borderWidth = 0;
+				usCompletedDataSet.datalabels = { display: false };
+				usCompletedDataSet.order = 1;
+				usCompletedDataSet.hidden = false;
+
+				$.each(self.userStories, function(snowId, days)
+				{
+					if (self.userStories[snowId].isClosed)
+					{
+						const dayIndex = self.workingDays.findIndex(day => day === self.userStories[snowId].isClosed);
+						const index = percentagePerUS.snowIds.findIndex(id => id === snowId.replace("SNOW-", ""));
+						const value = percentagePerUS.data[index];
+
+						usCompletedDataSet.data[dayIndex] = value;
+					}
+				});
+
+				const todayIndex = self.workingDays.findIndex((element) => element == moment().format('DD/MM/YYYY'));
+				lastValue = 0;
+				usCompletedDataSet.data.forEach((value, i, arr) => {
+					if (i > todayIndex) return;
+
+					if (value !== null && value !== undefined)
+					{
+						lastValue = value;
+					}
+					arr[i] = lastValue;
+				});
+				
+				var datasets = [
+					{
+						label: "Burndown",
+						data: burndownData,
+						backgroundColor: "#288a01ff",
+						borderColor: "#288a01ff",
+						fill: false,
+						tension: 0.4,
+						cubicInterpolationMode: 'monotone',
+						order: 1000,
+						hidden: false
+					},
+					{
+						label: "Burndown Estimate",
+						data: burndownDataEstimate,
+						backgroundColor: "#ca1818ff",
+						borderColor: "#ca1818ff",
+						fill: false,
+						tension: 0.4,
+						borderDash: [5, 5],
+						cubicInterpolationMode: 'monotone',
+						order: 1000,
+						hidden: false
+					},
+					offsprintDataSet,
+					userStoriesDataSet,
+					usCompletedDataSet
+				];
+
+				self.backupDatasets.push(...datasets);
 			},
 			enumerable: false
 		}
