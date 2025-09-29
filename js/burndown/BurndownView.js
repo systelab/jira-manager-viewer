@@ -989,7 +989,9 @@
 				usDataset.snowIds = new Array(self.workingDays.length).fill('');
 				additionalData.forEach(data => 
 				{
-					usDataset.snowIds[data.day] = data.snowId;
+					usDataset.snowIds[data.day] = usDataset.snowIds[data.day]
+						? usDataset.snowIds[data.day] + ', ' + data.snowId
+						: data.snowId;
 				});
 
 				self.myChart.update();
