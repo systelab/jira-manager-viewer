@@ -1349,15 +1349,18 @@
 				usCompletedDataSet.order = 1;
 				usCompletedDataSet.hidden = false;
 
-				$.each(self.userStories, function(snowId, days)
-				{
-					if (self.userStories[snowId].isClosed)
-					{
-						const dayIndex = self.workingDays.findIndex(day => day === self.userStories[snowId].isClosed);
-						const index = percentagePerUS.snowIds.findIndex(id => id === snowId.replace("SNOW-", ""));
-						const value = percentagePerUS.data[index];
+				var totalTasksSprint = 0;
+				Object.values(self.userStories).forEach(value => {
+					totalTasksSprint += value.totalTasks || 0;
+				});
 
-						usCompletedDataSet.data[dayIndex] = value;
+				$.each(self.userStories, function(snowId)
+				{
+					const usData = self.userStories[snowId];
+					if (usData.isClosed)
+					{
+						const dayIndex = self.workingDays.findIndex(day => day === usData.isClosed);
+						usCompletedDataSet.data[dayIndex] = (usData.totalTasks / totalTasksSprint) * 100;
 					}
 				});
 
@@ -1368,7 +1371,7 @@
 
 					if (value !== null && value !== undefined)
 					{
-						lastValue = value;
+						lastValue += value;
 					}
 					arr[i] = lastValue;
 				});
