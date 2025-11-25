@@ -66,11 +66,6 @@
 				
 				$(document).on("click", "#switchChartButton", function()
 				{
-					if (!self.isGlobalBurndownView)
-					{
-						self.saveVisibleCharts();
-					}
-
 					self.isGlobalBurndownView = !self.isGlobalBurndownView;
 
 					var copyDataset = self.myChart.data.datasets.slice();					
@@ -170,7 +165,7 @@
                     
                     changes.fill(estimate);
                     closedTask.fill(0);
-
+					
 					var dataSetBurnUp = self.chartData.datasets.find(({ label }) => label === "Burn up");
 
 					var dataSet = self.chartData.datasets.find(({ label }) => label === data.fields.issuetype.name);
@@ -216,7 +211,7 @@
 						
 						self.createEstimateResources(data.fields.issuetype.name, dataSetEstimate.borderColor );
 					}
-					
+
 					var whenClosed = -1;
                     
                     $.each([...data.changelog.histories].reverse(), function(i)
@@ -272,7 +267,7 @@
                         var isClosed = closedTask[i];
 						dataSet.data[i] += changes[i];
 						dataSetEstimate.data[i] += estimate;
-						dataSetEstimate.originalData[i] += estimate;
+						dataSetEstimate.originalData[i] += estimate;						
 						
 						var bgcolor = "#fff";
 						
@@ -350,7 +345,9 @@
 					});
 							
 					self.chartData.datasets.push(dataSet);	
-				}				
+				}		
+				
+				data.issues = self.filterCommitmentIssues(data.issues);
 
                 $.each(data.issues, function()
                 {
@@ -380,7 +377,35 @@
 				self.createGlobalChartDataSets();
             },
             enumerable: false
-        },
+        },		
+        filterCommitmentIssues: {
+            value: function(issues)
+            {
+                var self = this;
+
+				const committedUS = issues.filter(issue => 
+				{
+					if (issue.fields.issuetype.name === "Off-Sprint task")
+					{
+						return true;
+					}
+
+					var parentKey = issue.fields.parent ? issue.fields.parent.key : null;
+					return parentKey && self.userStories.hasOwnProperty(parentKey);					
+				});
+
+				return committedUS;				
+			},
+			enumerable: false
+		},
+		getUSPublicId: {
+			value: function(usId)
+			{
+				const i = usId.indexOf('-');
+    			return i >= 0 ? usId.slice(i + 1) : usId;
+			},
+			enumerable: false
+		},
         createInitialValues: {
             value: function(totalIssues)
             {
