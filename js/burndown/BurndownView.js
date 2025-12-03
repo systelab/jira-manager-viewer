@@ -108,7 +108,7 @@
 					visibles[ds.label] = isVisible;
 				});
 
-				self.visibleCharts = JSON.stringify(visibles);
+				self.visibleCharts = visibles;
 				self.save();
             },
 			enumerable: false
@@ -118,7 +118,7 @@
 			{
 				var self = this;
 
-				var visibles = JSON.parse(self.visibleCharts);
+				var visibles = self.visibleCharts;
                 $.each(self.myChart.data.datasets, function(i, dataset) 
 				{
                     if (visibles.hasOwnProperty(dataset.label)) 
