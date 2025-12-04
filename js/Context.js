@@ -253,6 +253,27 @@ viewer.listeners = viewer.listeners || {};
             },
             enumerable: false
         },
+        getCSPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.CSPresenter(this);
+            },
+            enumerable: false
+        },
+        getCSView : {
+            value: function(presenter)
+            {
+                return new viewer.views.CSView(presenter);
+            },
+            enumerable: false
+        },
+        getCSInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.CSInteractor();
+            },
+            enumerable: false
+        },
         getAnomaliesPresenter : {
             value: function()
             {
@@ -293,6 +314,7 @@ viewer.listeners = viewer.listeners || {};
                     worklog: "getWorklogPresenter",
                     analysis: "getAnalysisPresenter",
                     release_notes: "getReleaseNotesPresenter",
+                    customer_supports: "getCSPresenter",
                     anomalies: "getAnomaliesPresenter"
                 };
 
