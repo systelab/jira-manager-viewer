@@ -21,6 +21,7 @@
         <link rel="stylesheet" href="css/new-task.css">
         <link rel="stylesheet" href="css/setup.css">
         <link rel="stylesheet" href="css/offsprint.css">
+        <link rel="stylesheet" href="css/anomalies.css">
         <link rel="stylesheet" href="css/worklog.css">
         <link rel="stylesheet" href="css/analysis.css">
         <link rel="stylesheet" href="css/burndown.css">
@@ -71,6 +72,9 @@
 		<script src="js/release_notes/ReleaseNotesView.js"></script>
         <script src="js/release_notes/ReleaseNotesInteractor.js"></script>
         <script src="js/release_notes/ReleaseNotesPresenter.js"></script>
+        <script src="js/anomalies/AnomaliesView.js"></script>
+        <script src="js/anomalies/AnomaliesInteractor.js"></script>
+        <script src="js/anomalies/AnomaliesPresenter.js"></script>
         <title>Jira Manager</title>
     </head>
     <body>
@@ -177,6 +181,7 @@
         initializeConfig.push("worklog");
         initializeConfig.push("analysis");
         initializeConfig.push("release_notes");
+        initializeConfig.push("anomalies");
         
         (function()
         {
