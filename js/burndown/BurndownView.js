@@ -17,12 +17,9 @@
                 this.issues = [];
                 this.resources = {};
 				this.userStories = {};
-				this.backupDatasets = [];
-				this.processTodayData = false;
 				
                 $(".playlists-list").on("loaded", function (evt, data)
-                {
-									
+                {									
                     self.issues = data.issues;
                 });
                 
@@ -51,34 +48,12 @@
                         self.presenter.load(self.board.name, self.sprint.name);
                     });
                 });
-
-
 				this.visibleCharts = {};
 				$(document).on("click", "#saveChartButton", function() 
 				{
 					if (!self.isGlobalBurndownView)
 					{
 						self.saveVisibleCharts();
-					}
-				});
-				//switch charts
-				this.isGlobalBurndownView = false;
-				
-				$(document).on("click", "#switchChartButton", function()
-				{
-					self.isGlobalBurndownView = !self.isGlobalBurndownView;
-
-					var copyDataset = self.myChart.data.datasets.slice();					
-					self.myChart.data.datasets = self.backupDatasets.slice();
-					self.backupDatasets = copyDataset.slice();
-					
-					if (!self.isGlobalBurndownView)
-					{
-						self.loadVisibleCharts();
-					}
-					else
-					{
-						self.myChart.update();
 					}
 				});
             },
@@ -130,424 +105,12 @@
 				self.myChart.update();
 			},
 			enumerable: false
-		},
-        onSubtask : {
-            value: function(data)
-            {
-                var self = this;
-                
-                //if(data.fields.timetracking.originalEstimateSeconds > 0)
-                {
-                    var table = $("table.burndown");
-                    
-                    var tbody = table.find("#" + data.fields.parent.key);
-                    
-                    if(tbody.length == 0)
-                    {
-                        tbody = $("<tbody/>", {id: data.fields.parent.key});
-                        tbody.appendTo(table);
-                        
-                        $("<tbody/>", {html: "<tr/>"}).appendTo(table);
-                    }
-                
-                    var row = $("<tr/>");
-                    
-                    var estimate = 1;//data.fields.timetracking.originalEstimateSeconds / 3600;
-                    $("<td/>", {html: data.fields.parent.key}).appendTo(row);
-                    $("<td/>", {html: data.fields.issuetype.name}).appendTo(row);
-                    $("<td/>", {html: data.key}).appendTo(row);
-                    $("<td/>", {html: data.fields.summary}).appendTo(row);
-                    $("<td/>", {html: estimate}).appendTo(row);
-                    $("<td/>", {html: ""}).appendTo(row);
-                   
-                    var changes = new Array(self.workingDays.length);
-                    var closedTask = new Array(self.workingDays.length);
-                    
-                    changes.fill(estimate);
-                    closedTask.fill(0);
-					
-					var dataSetBurnUp = self.chartData.datasets.find(({ label }) => label === "Burn up");
-
-					var dataSet = self.chartData.datasets.find(({ label }) => label === data.fields.issuetype.name);
-					var dataSetEstimate = self.chartData.datasets.find(({ label }) => label === data.fields.issuetype.name + " Estimate");
-					
-					if(!dataSet)
-					{
-						dataSet = {
-						  label: data.fields.issuetype.name,
-						  fill: false,
-						  backgroundColor: "#fff",
-						  borderColor: self.getColor(self.chartData.datasets.length),
-						  data: new Array(self.workingDays.length),
-						  cubicInterpolationMode: 'monotone',
-						  tension: 0.4
-						};
-						
-						dataSet.data.fill(0);
-						
-						self.chartData.datasets.push(dataSet);
-						
-						dataSetEstimate = {
-						  label: data.fields.issuetype.name + " Estimate",
-						  fill: false,
-						  backgroundColor: "#fff",
-						  borderColor: self.getColor(self.chartData.datasets.length),
-						  data: new Array(self.workingDays.length),
-						  originalData: new Array(self.workingDays.length),
-						  borderDash: [5, 5],
-						  workers: []
-						};
-						
-						dataSetEstimate.data.fill(-1);
-						dataSetEstimate.originalData.fill(-1);
-						self.chartData.datasets.push(dataSetEstimate);
-						
-						self.myChart.update();
-						
-						if(self.resources[data.fields.issuetype.name] == undefined)
-						{
-							self.resources[data.fields.issuetype.name] = {};
-						}
-						
-						self.createEstimateResources(data.fields.issuetype.name, dataSetEstimate.borderColor );
-					}
-
-					var whenClosed = -1;
-                    
-                    $.each([...data.changelog.histories].reverse(), function(i)
-                    {
-                        var date = moment(this.created);
-                        
-                        var index = self.workingDays.findIndex((element) => element == date.format('DD/MM/YYYY'));
-                        
-                        if(index > -1)
-                        {
-							var author = this.author;
-                            $.each(this.items, function(j)
-                            {
-                                if(this.field == "timeestimate")
-                                {
-                                    var from = Math.ceil(parseInt(this.from || 0) / 3600);
-                                    var to = Math.ceil(parseInt(this.to || 0) / 3600);
-                                    
-                                    changes.fill(0, index);
-                                }
-                                else if(this.field == "status" && this.to == 10706)
-                                {
-                                    whenClosed = index;
-                                }
-								
-								else if(this.field == "timespent")
-                                {
-                                    if(dataSetEstimate.workers.findIndex(({ accountId }) => accountId == author.accountId) < 0)
-									{
-										dataSetEstimate.workers.push(author);
-									}
-                                }
-                            });
-                        }
-                    });
-                    
-                    var index = self.workingDays.findIndex((element) => element == moment().format('DD/MM/YYYY'));
-                    
-                    if(index > -1)
-                    {
-                        changes.fill("", index + 1);
-                    }
-					
-                    $.each(self.workingDays, function(i)
-                    {
-						var todayIndex = self.workingDays.findIndex(day => day === moment().format('DD/MM/YYYY'));
-						if (!self.processTodayData && i >= todayIndex)
-						{
-							return false;
-						}
-
-                        var value = changes[i];
-                        var isClosed = closedTask[i];
-						dataSet.data[i] += changes[i];
-						dataSetEstimate.data[i] += estimate;
-						dataSetEstimate.originalData[i] += estimate;						
-						
-						var bgcolor = "#fff";
-						
-						if(whenClosed == i)
-						{
-							for(var j = whenClosed; j < self.workingDays.length; ++j)
-							{
-								dataSetBurnUp.data[j] += estimate;
-							}
-							
-							bgcolor = "#0f0";
-						}
-						
-                        $("<td/>", {html: value, style: "background-color: " + bgcolor }).appendTo(row);
-                    });
-					
-					self.myChart.update();
-                    
-                    row.appendTo(tbody);
-                }
-            },
-            enumerable: false
-        },
-        onSubtasks : {
-            value: function(data)
-            {
-                var self = this;
-
-				{
-					var dataSet = {
-							  label: "Burn up",
-							  fill: true,
-							  backgroundColor: "#F5F5F5",
-							  borderColor: self.getColor(self.chartData.datasets.length),
-							  data: new Array(self.workingDays.length),
-							  cubicInterpolationMode: 'monotone',
-							  tension: 0.4,
-							  order: 998,
-                              hidden: true
-							};
-							
-					dataSet.data.fill(0);
-							
-					self.chartData.datasets.push(dataSet);	
-				}
-
-				{
-					var dataSet = {
-							  label: "Burn up original",
-							  fill: true,
-							  backgroundColor: "#FFF",
-							  borderColor: self.getColor(self.chartData.datasets.length),
-							  data: new Array(self.workingDays.length),
-							  cubicInterpolationMode: 'monotone',
-							  tension: 0.4,
-							  order: 999,
-                              hidden: true
-							};
-							
-					var total = 0;
-					$.each(data.issues, function()
-					{
-                        total += 1
-						if(this.fields.timetracking.originalEstimateSeconds)
-						{
-							//total += this.fields.timetracking.originalEstimateSeconds / 3600;
-						}
-					});
-					
-					var step = total / self.workingDays.length;
-					
-					$.each(self.workingDays, function(i)
-					{
-						dataSet.data[i] = step * (i+1);
-					});
-							
-					self.chartData.datasets.push(dataSet);	
-				}		
-				
-				data.issues = self.filterCommitmentIssues(data.issues);
-
-                $.each(data.issues, function()
-                {
-                    self.onSubtask(this);
-                });
-				
-				var dataSets = self.chartData.datasets.filter(({ label }) => label.slice(label.length-9,label.length) != " Estimate");
-				
-				var todayIndex = self.workingDays.findIndex((element) => element == moment().format('DD/MM/YYYY'));
-				
-				$.each(dataSets, function(j)
-				{
-					if(j > 1)
-					{
-						var maxIndex = self.processTodayData ? todayIndex + 1 : todayIndex;
-						dataSets[j].data = dataSets[j].data.slice(0, maxIndex);
-					}
-				});
-				
-				self.createUserStoriesScope("User Stories", "#B0B0B0");
-				self.myChart.update();
-				self.computeEstimate();
-				self.computeUSEstimations();				
-				self.computeOffSprintHours(data.issues);        
-				self.loadVisibleCharts();
-				self.createInitialValues(data.issues);
-				self.createGlobalChartDataSets();
-            },
-            enumerable: false
-        },		
-        filterCommitmentIssues: {
-            value: function(issues)
-            {
-                var self = this;
-
-				const committedUS = issues.filter(issue => 
-				{
-					if (issue.fields.issuetype.name === "Off-Sprint task")
-					{
-						return true;
-					}
-
-					var parentKey = issue.fields.parent ? issue.fields.parent.key : null;
-					return parentKey && self.userStories.hasOwnProperty(parentKey);					
-				});
-
-				return committedUS;				
-			},
-			enumerable: false
-		},
-		getUSPublicId: {
-			value: function(usId)
-			{
-				const i = usId.indexOf('-');
-    			return i >= 0 ? usId.slice(i + 1) : usId;
-			},
-			enumerable: false
-		},
-        createInitialValues: {
-            value: function(totalIssues)
-            {
-                var self = this;
-
-				var impl = 0;
-				var qa = 0;
-				var auto = 0;
-
-				$.each(totalIssues, function()
-				{
-					if (this.fields.issuetype.name == "Implementation Task")
-						impl++;
-					else if (this.fields.issuetype.name == "sub-Tarea QA")
-						qa++;
-					else if (this.fields.issuetype.name == "sub-Tarea Test Auto")
-						auto++;
-				});
-
-				self.workingDays.unshift("START");
-				self.chartData.labels.unshift("START");	
-
-				$.each(self.chartData.datasets, function(i, dataset) {
-					dataset.data.push(null);
-				});
-
-				
-				function shiftDaysPatch(self, datasetName, initialValue) {
-					var curr = self.chartData.datasets.find(({ label }) => label === datasetName);
-					var estimate = self.chartData.datasets.find(({ label }) => label === datasetName + " Estimate");
-					curr.data = [initialValue].concat(curr.data.slice(0, -1));
-					if (estimate)
-					estimate.data = [initialValue].concat(estimate.data.slice(0, -1));
-				}
-
-				shiftDaysPatch(self, "Implementation Task", impl);
-				shiftDaysPatch(self, "sub-Tarea QA", qa);
-				shiftDaysPatch(self, "sub-Tarea Test Auto", auto);
-				shiftDaysPatch(self, "Off-Sprint Hours", 0);
-
-				self.myChart.update();
-			},
-			enumerable: false
-		},
-        computeEstimate : {
-            value: function()
-            {
-				var self = this;
-				
-                var dataSetsEstimate = self.chartData.datasets.filter(({ label }) => label.slice(label.length-9, label.length) == " Estimate");
-				
-				$.each(dataSetsEstimate, function(dataset)
-				{
-					this.data = [...this.originalData];
-					this.counter = this.originalData[0];
-                    this.numTasks = this.counter;
-                    this.numResources = 0;
-				});
-				
-				var numDays = 0;
-				
-				$.each(self.workingDays, function(i)
-				{
-					++numDays;
-					
-					$.each(dataSetsEstimate, function(dataset)
-					{
-						var resources = self.resources[this.label.slice(0, this.label.length-9)];
-						
-						if(resources != undefined)
-						{
-                            var that = this;
-							
-							$.each(resources, function(resource)
-							{
-								if(this[i] != undefined)
-								{
-									if(this[i].type == "full")
-									{
-										++that.numResources;
-									}
-									else if(this[i].type == "mid")
-									{
-										that.numResources += 0.5;
-									}
-								}
-							});
-						}
-					});
-				});
-                
-                $.each(self.workingDays, function(i)
-				{
-					$.each(dataSetsEstimate, function(dataset)
-					{
-						// if(this.label!="Implementation Task Estimate")
-							// return;
-						
-						var resources = self.resources[this.label.slice(0, this.label.length-9)];
-						
-						if(resources != undefined)
-						{
-                            var that = this;
-                            if(that.numResources > 0)
-                            {
-								var ratio = this.numTasks / this.numResources;
-								
-                                $.each(resources, function(resource)
-                                {
-                                    if(this[i] != undefined)
-                                    {
-                                        if(this[i].type == "full")
-                                        {
-                                            that.counter -= ratio;
-                                        }
-                                        else if(this[i].type == "mid")
-                                        {
-                                            that.counter -= (ratio * 0.5);
-                                        }
-                                    }
-                                });
-                            }
-						}
-						this.data[i] = this.counter;
-						if(this.data[i] < 0)
-							this.data[i] = 0;
-					});
-				});
-				
-				//$(".uncommited-table-container .resources").html("&nbsp;&nbsp;&nbsp;&nbsp;Resources: " + allResources/((0.5+0.5+1+1+0.2) * numDays))
-				
-				self.myChart.update();
-            },
-            enumerable: false
-        },
+		},		
         onLoadSettings : {
             value: function(data)
             {
-                this.settings = data;
-                
                 var self = this;
-                
+                this.settings = data;                
                 $(".main-view").load("js/burndown/template.html", function()
                 {
                     self.onSprint();
@@ -616,7 +179,7 @@
                     issues.push(this.key);
                 });
                 		
-                self.presenter.getIssues(issues);
+                self.presenter.getIssues(self.issues, self.workingDays);
             },
             enumerable: false
         },
@@ -630,6 +193,7 @@
         setupChart : {
             value: function () {
                 const labels = Array.from(this.workingDays, x => moment(x, "DD/MM/YYYY").format("DD/MM"));
+				labels.unshift("START");
                 this.chartData = {
                     labels: labels,
                     datasets: []
@@ -680,7 +244,6 @@
 							yOffSprintHours: {
 								display: true,
 								min: 0,
-								max: 30,
 								position: 'right',
 								grid: {
 									display: false
@@ -727,18 +290,6 @@
             },
             enumerable: false
         },
-        getColor : {
-            value: function(i)
-            {
-                var colors = ["#c0c0c0", "#FAFAFA", "#1e88e5", "#90caf9", "#ffb300", "#ffd54f", "#8e24aa", "#ce93d8", "#f4511e", "#ff8a65"];
-				
-				if(i >= colors.length)
-					return colors[0];
-				else
-					return colors[i];
-            },
-            enumerable: false
-        },
         updateEstimateResources : {
             value: function(task, table)
             {
@@ -773,8 +324,7 @@
 								self.resources[task][name][j].type = "mid";
 								$(this).removeClass("no").addClass("mid");
 							}
-							
-							self.computeEstimate();
+
 							self.save();
 						}).appendTo(td);
 					
@@ -809,47 +359,7 @@
 				self.updateEstimateResources(name, table);
             },
             enumerable: false
-        },
-		computeUSEstimations: {
-			value: function () {
-				var self = this;
-
-				var usEstimations = {};
-
-				$.each(self.issues, function () 
-				{
-					var usKey = this.key;
-
-					if (this.fields.subtasks && this.fields.subtasks.length > 0) 
-					{
-						if (!usEstimations[usKey]) 
-						{
-							usEstimations[usKey] = { totalTasks: 0 };
-						}
-
-						usEstimations[usKey].totalTasks = this.fields.subtasks.length;
-						usEstimations[usKey].isClosed = this.fields.status.name === "Closed" ? 
-							moment(this.fields.statuscategorychangedate).format("DD/MM/YYYY") : null;
-					}
-				});
-
-				$.each(self.userStories, function (snowId) 
-				{
-					if (usEstimations[snowId]) 
-					{
-						self.userStories[snowId].totalTasks = usEstimations[snowId].totalTasks;
-						self.userStories[snowId].isClosed = usEstimations[snowId].isClosed;
-					}
-					else
-					{
-						self.userStories[snowId].totalTasks = 0;
-					}
-				});
-
-				self.updateUSChart();
-			},
-			enumerable: false
-		},
+        },		
 		updateEstimateUSResources : {
             value: function(task, table)
             {
@@ -885,7 +395,6 @@
                                 $(this).removeClass("no").addClass("full");
                             }
 
-                            self.computeUSEstimations();
                             self.save();
                         }).appendTo(td);
 
@@ -919,110 +428,7 @@
 				
 				self.updateEstimateUSResources(name, table);
 			}
-		},
-		updateUSChart: {
-			value: function () {
-				var self = this;
-
-				var usDataset = self.chartData.datasets.find(({ label }) => label === "User Stories");
-				if (!usDataset) 
-				{
-					usDataset = 
-					{
-						label: "User Stories",
-						data: new Array(self.workingDays.length).fill(null),
-						backgroundColor: "#B0B0B0",
-						borderColor: "#B0B0B0",
-						borderDash: [5, 5],
-						pointRadius: 0,
-						fill: false,
-						tension: 0,
-						spanGaps: true,
-						yAxisID: 'y2',
-						datalabels: {
-							display: function(context) {
-								return context.dataIndex !== 0;
-							},
-							align: 'center',
-							anchor: 'end',
-							color: '#B0B0B0',
-							backgroundColor: '#fff',
-							borderColor: '#B0B0B0',
-							borderRadius: 4,
-							borderWidth: 1,
-							font: {
-								weight: 'bold'
-							},
-							formatter: function(value, context) {
-								return	context.dataIndex !== 0 && context.dataset.snowIds &&
-										context.dataset.snowIds[context.dataIndex]
-										? context.dataset.snowIds[context.dataIndex]
-										: '';
-							}
-						}
-					};
-					self.chartData.datasets.push(usDataset);
-				}
-
-				usDataset.data.fill(null);
-				var additionalData = [];
-
-				var totalTasksAllUS = 0;
-				$.each(self.userStories, function (snowId) {
-					totalTasksAllUS += self.userStories[snowId].totalTasks || 0;
-				});
-
-				$.each(self.userStories, function (snowId, days) 
-				{
-					var totalTasks = self.userStories[snowId].totalTasks || 0;
-					var percentage = totalTasksAllUS > 0 ? ((totalTasks / totalTasksAllUS) * 100).toFixed(2) : 0;
-					var mostRecentFullDay = -1;
-
-					$.each(days, function (j, dayData)
-					{
-						if (dayData.type === "full")
-						{
-							mostRecentFullDay = j + 1; // + 1 because of the START label in the X axis.
-						}
-					});
-
-					if (mostRecentFullDay !== -1) 
-					{
-						additionalData.push({
-							day: mostRecentFullDay,
-							percentage: parseFloat(percentage),
-							snowId: snowId.replace("SNOW-", ""),
-							totalTasks: totalTasks
-						});
-					}
-				});
-
-				additionalData.sort((a, b) => a.day - b.day);
-
-				var cumulativePercentage = 0;
-				additionalData.forEach((data, index) => 
-				{
-					cumulativePercentage += data.percentage;
-					data.cumulativePercentage = cumulativePercentage.toFixed(2);
-				});
-
-				usDataset.data[0] = 0;
-				additionalData.forEach(data => {
-					usDataset.data[data.day] = parseFloat(data.cumulativePercentage); // Asigna el porcentaje acumulativo al día correspondiente
-				});
-
-				usDataset.snowIds = new Array(self.workingDays.length).fill('');
-				additionalData.forEach(data => 
-				{
-					usDataset.snowIds[data.day] = usDataset.snowIds[data.day]
-						? usDataset.snowIds[data.day] + ', ' + data.snowId
-						: data.snowId;
-				});
-
-				self.myChart.update();
-			},
-			enumerable: false
-		},
+		},		
         onLoad : {
             value: function(data)
             {
@@ -1125,7 +531,7 @@
         onSave : {
             value: function(data)
             {
-				this.computeEstimate();
+				this.computeEstimateLegacy();
             },
             enumerable: false
         },
@@ -1200,241 +606,229 @@
 				this.dialog[0].close();
             },
             enumerable: false
-        },
-        createOffSprintHoursDataset: {
-            value: function() 
-			{
-                var self = this;
-                
-                var offSprintHoursDataset = self.chartData.datasets.find(({ label }) => label === "Off-Sprint Hours");
-                
-                if (!offSprintHoursDataset) {
-                    offSprintHoursDataset = {
-                        label: "Off-Sprint Hours",
-                        data: new Array(self.workingDays.length).fill(0),
-                        backgroundColor: "#ffffff",
-                        borderColor: "#ff6b6b",
-                        pointRadius: 4,
-                        pointBorderWidth: 2,
-                        pointStyle: 'rectRot',
-						borderWidth: 0,
-                        fill: false,
-                        tension: 0,
-                        showLine: false,
-                        spanGaps: true,
-                        yAxisID: 'yOffSprintHours'
-                    };
-                    
-                    self.chartData.datasets.push(offSprintHoursDataset);
-                }
-                
-                return offSprintHoursDataset;
-            },
-            enumerable: false
-        },
-		computeOffSprintHours: {
-            value: function(data) 
-			{
-                var self = this;                
-                
-				var offSprintHoursDataset = self.createOffSprintHoursDataset();
-                offSprintHoursDataset.data.fill(0);
-                
-                var todayIndex = self.workingDays.findIndex((element) => element == moment().format('DD/MM/YYYY'));
-                offSprintHoursDataset.data = offSprintHoursDataset.data.slice(0, todayIndex + 1);
-
-				$.each(self.workingDays, function(dayIndex, day) 
-				{
-                    if (todayIndex > -1 && dayIndex > todayIndex) 
-					{
-                        return false;
-                    }
-                    
-                    var totalHoursForDay = 0;
-                    
-                    $.each(data, function(index, item) 
-					{
-                        if (item && item.fields && item.fields.issuetype && item.fields.issuetype.name === "Off-Sprint task") 
-						{
-                            var hoursForDay = self.processOffSprintSubtask(item, dayIndex);
-                            totalHoursForDay += hoursForDay;
-                        }
-                    });
-                    
-                    offSprintHoursDataset.data[dayIndex] = totalHoursForDay;
-                });
-                
-                self.myChart.update();
-            },
-            enumerable: false
-        },
-		processOffSprintSubtask: {
-            value: function(subtaskData, dayIndex) 
-			{
-                var self = this;
-        
-				var hoursForDay = 0;
-                var targetDay = self.workingDays[dayIndex];
-        
-                if (subtaskData.fields && subtaskData.fields.worklog && subtaskData.fields.worklog.worklogs) 
-				{
-                    $.each(subtaskData.fields.worklog.worklogs, function() 
-					{
-                        var worklogDate = moment(this.started);
-                        var worklogDayFormatted = worklogDate.format('DD/MM/YYYY');
-                        
-                        if (worklogDayFormatted === targetDay) 
-						{
-                            var hoursWorked = this.timeSpentSeconds / 3600;
-                            hoursForDay += hoursWorked;
-                        }
-                    });
-                }
-        
-                return hoursForDay;
-            },
-            enumerable: false
-        },
-		createGlobalChartDataSets: {
-			value: function() 
+        },		
+		onBurndownComputed: {
+			value: function(burndownDataSets, burndownConfig)
 			{
 				var self = this;
 
-				// Global burndown datasets
-				var burndownData = new Array(self.workingDays.length).fill(null);
-				var burndownDataEstimate = new Array(self.workingDays.length).fill(null);
-
-				const targetLabels = 
-				{
-					current: ["Implementation Task", "sub-Tarea QA", "sub-Tarea Test Auto"],
-					estimate: ["Implementation Task Estimate", "sub-Tarea QA Estimate", "sub-Tarea Test Auto Estimate"]
+				const chartDrawers = {
+					globalBurndown: () => self.drawBurndownLine(burndownDataSets.globalBurndown, "Burndown", "#006905"),
+					offSprintHours: () => self.drawOffSprintHours(burndownDataSets.offSprintHours),
+					usClosureEstimate: () => self.drawUSClosureEstimate(burndownDataSets.usClosureEstimate),
+					usCompleted: () => self.drawUSCompleted(burndownDataSets.usCompleted),
+					implementationTasksBurndown: () => self.drawBurndownLine(burndownDataSets.implementationTasksBurndown, "Implementation Tasks Burndown", "#1e88e5"),
+					qaTasksBurndown: () => self.drawBurndownLine(burndownDataSets.qaTasksBurndown, "QA Tasks Burndown", "#ffb300"),
+					testAutoTasksBurndown: () => self.drawBurndownLine(burndownDataSets.testAutoTasksBurndown, "Test Auto Tasks Burndown", "#8e24aa")
 				};
 
-				$.each(self.chartData.datasets, function(i, dataset)
-				{
-					if (targetLabels.current.includes(dataset.label))
-					{
-						for (var j = 0; j < dataset.data.length; j++)
-						{
-							burndownData[j] += dataset.data[j];
-						}
-					}
-					else if (targetLabels.estimate.includes(dataset.label))
-					{
-						for (var j = 0; j < dataset.data.length; j++)
-						{
-							burndownDataEstimate[j] += dataset.data[j];
-						}						
+				// Draw only the lines existing in burndownDataSets
+				Object.keys(burndownDataSets).forEach(function(key) {
+					if (burndownDataSets[key] && chartDrawers[key]) {
+						chartDrawers[key]();
 					}
 				});
 
-				// Imported datasets (Off-Sprint Hours and User Stories)
-				const offsprintDataSet = $.extend(true, {}, self.chartData.datasets.find(({ label }) => label === "Off-Sprint Hours"));
-				offsprintDataSet.borderColor = "#7da7dfff";
-				offsprintDataSet.backgroundColor = "#7da7dfff";
-				offsprintDataSet.hidden = false;
+				//self.loadVisibleCharts(); TO ADAPT
 
-				const userStoriesDataSet = $.extend(true, {}, self.chartData.datasets.find(({ label }) => label === "User Stories"));
-				var userStoriesColor = "#fdb13e83";
-				userStoriesDataSet.borderColor = userStoriesColor;
-				userStoriesDataSet.backgroundColor = userStoriesColor;
-				userStoriesDataSet.datalabels.color = userStoriesColor;
-				userStoriesDataSet.datalabels.borderColor = userStoriesColor;
-				userStoriesDataSet.hidden = false;
-
-				var pointRadiusArray = new Array(userStoriesDataSet.data.length).fill(0);				
-				var lastValue = 0;
-				userStoriesDataSet.data.forEach((value, i, arr) =>
-				{
-					if (value !== null && value !== undefined && value !== 0)
-					{
-						pointRadiusArray[i] = 1;
-						lastValue = value;
-					}
-					arr[i] = lastValue;
-				});
-
-				userStoriesDataSet.pointRadius = pointRadiusArray;
-				userStoriesDataSet.datalabels.display = function(context) 
-				{
-					return context.dataset.pointRadius[context.dataIndex] > 0;
-				};
-
-				// US % dataset
-				const percentagePerUS = self.chartData.datasets.find(({ label }) => label === "User Stories");
-				var usCompletedDataSet = $.extend(true, {}, self.chartData.datasets.find(({ label }) => label === "User Stories"));
-				usCompletedDataSet.data = new Array(percentagePerUS.data.length).fill(null);
-				usCompletedDataSet.label = "% US Completed";
-				usCompletedDataSet.backgroundColor = userStoriesColor;
-				usCompletedDataSet.borderColor = userStoriesColor;
-				usCompletedDataSet.fill = true;
-				usCompletedDataSet.pointRadius = 0;
-				usCompletedDataSet.borderWidth = 0;
-				usCompletedDataSet.datalabels = { display: false };
-				usCompletedDataSet.order = 1;
-				usCompletedDataSet.hidden = false;
-
-				var totalTasksSprint = 0;
-				Object.values(self.userStories).forEach(value => {
-					totalTasksSprint += value.totalTasks || 0;
-				});
-
-				$.each(self.userStories, function(snowId)
-				{
-					const usData = self.userStories[snowId];
-					if (usData.isClosed)
-					{
-						const dayIndex = self.workingDays.findIndex(day => day === usData.isClosed);
-						usCompletedDataSet.data[dayIndex] = (usData.totalTasks / totalTasksSprint) * 100;
-					}
-				});
-
-				const todayIndex = self.workingDays.findIndex((element) => element == moment().format('DD/MM/YYYY'));
-				lastValue = 0;
-				usCompletedDataSet.data.forEach((value, i, arr) => {
-					if (i > todayIndex) return;
-
-					if (value !== null && value !== undefined)
-					{
-						lastValue += value;
-					}
-					arr[i] = lastValue;
-				});
+				self.createEstimateResources("globalBurndownEstimate", "#ca1818ff");
 				
-				var datasets = [
+				if (burndownConfig.lines.includes("usClosureEstimate")) self.createUserStoriesScope("User Stories", "#B0B0B0");
+				if (burndownConfig.lines.includes("implementationTasksBurndown")) self.createEstimateResources("implementationTasksBurndown", "#1e88e5");
+				if (burndownConfig.lines.includes("qaTasksBurndown")) self.createEstimateResources("qaTasksBurndown", "#ffb300");
+				if (burndownConfig.lines.includes("testAutoTasksBurndown")) self.createEstimateResources("testAutoTasksBurndown", "#8e24aa");
+				
+				self.myChart.update();
+				self.save();
+			},
+			enumerable: false
+		},
+		onEstimateComputed: {
+			value: function(dataSets) // upgrade: only one
+			{
+				var self = this;
+
+				const chartDrawersEstimatesLines = {
+					globalBurndownEstimate: () => self.drawEstimateLine(dataSets.globalBurndownEstimate, "#ca1818ff", "Global Burndown Estimate"),
+					usClosureEstimate: () => self.drawUSClosureEstimate(dataSets.usClosureEstimate),
+					implementationTasksEstimate: () => self.drawEstimateLine(dataSets.implementationTasksEstimate, "#1e88e5", "Implementation Tasks Estimate"),
+					qaTasksEstimate: () => self.drawEstimateLine(dataSets.qaTasksEstimate, "#ffb300", "QA Tasks Estimate"),
+					testAutoTasksEstimate: () => self.drawEstimateLine(dataSets.testAutoTasksEstimate, "#8e24aa", "Test Auto Tasks Estimate")
+				};
+
+				// Draw only the lines existing in dataSets
+				Object.keys(dataSets).forEach(function(key) {
+					if (dataSets[key] && chartDrawersEstimatesLines[key]) {
+						chartDrawersEstimatesLines[key]();
+					}
+				});
+				self.myChart.update();
+			},
+			enumerable: false
+		},
+		drawBurndownLine: {
+			value: function(dataSet, name, color)
+			{
+				var self = this;
+
+				var dataset =
+				{
+					label: name,
+					data: dataSet,
+					backgroundColor: color,
+					borderColor: color,
+					fill: false,
+					tension: 0.4,
+					cubicInterpolationMode: 'monotone',
+					order: 1000,
+					hidden: false,
+					spanGaps: true
+				};
+
+				self.chartData.datasets.push(dataset);
+			},
+			enumerable: false
+		},
+		drawEstimateLine: {
+			value: function(data, color, name)
+			{
+				var self = this;
+
+				var dataset = self.chartData.datasets.find(({ label }) => label === name);
+				if (dataset)
+				{
+					dataset.data = data;
+				}
+				else
+				{					
+					var dataset =
 					{
-						label: "Burndown",
-						data: burndownData,
-						backgroundColor: "#288a01ff",
-						borderColor: "#288a01ff",
-						fill: false,
-						tension: 0.4,
-						cubicInterpolationMode: 'monotone',
-						order: 1000,
-						hidden: false
-					},
-					{
-						label: "Burndown Estimate",
-						data: burndownDataEstimate,
-						backgroundColor: "#ca1818ff",
-						borderColor: "#ca1818ff",
+						label: name,
+						data: data,
+						backgroundColor: color,
+						borderColor: color,
 						fill: false,
 						tension: 0.4,
 						borderDash: [5, 5],
 						cubicInterpolationMode: 'monotone',
 						order: 1000,
 						hidden: false
-					},
-					offsprintDataSet,
-					userStoriesDataSet,
-					usCompletedDataSet
-				];
-
-				self.backupDatasets.push(...datasets);
+					};
+				}
+				
+				self.chartData.datasets.push(dataset);
 			},
 			enumerable: false
-		}
-	});
+		},
+		drawOffSprintHours: {
+			value: function(data)
+			{
+				var self = this;
 
+				var dataset =
+				{
+					label: "Off-Sprint Hours",
+					data: data,
+					backgroundColor: "#ffffff",
+					borderColor: "#ff6b6b",
+					pointRadius: 4,
+					pointBorderWidth: 2,
+					pointStyle: 'rectRot',
+					borderWidth: 0,
+					fill: false,
+					tension: 0,
+					showLine: false,
+					spanGaps: true,
+					yAxisID: 'yOffSprintHours'
+                };
+                    
+                self.chartData.datasets.push(dataset);                
+			},
+			enumerable: false
+		},
+		drawUSClosureEstimate: {
+			value: function(data)
+			{
+				var self = this;
+
+				var dataset = self.chartData.datasets.find(({ label }) => label === "User Stories");
+				if (dataset)
+				{
+					dataset.data = data.dataSet;
+					dataset.usKeys = data.usKeys;
+				}
+				else
+				{
+					var dataset = 
+					{
+						label: "User Stories",
+						data: data.dataSet,
+						usKeys: data.usKeys,
+						backgroundColor: "#B0B0B0",
+						borderColor: "#B0B0B0",
+						borderDash: [5, 5],
+						pointRadius: 0,
+						fill: false,
+						tension: 0,
+						spanGaps: true,
+						yAxisID: 'y2',
+						datalabels: {
+							display: function(context) {
+								return context.dataIndex !== 0;
+							},
+							align: 'center',
+							anchor: 'end',
+							color: '#B0B0B0',
+							backgroundColor: '#fff',
+							borderColor: '#B0B0B0',
+							borderRadius: 4,
+							borderWidth: 1,
+							font: {
+								weight: 'bold'
+							},
+							formatter: function(_, context) {
+								return context.dataIndex !== 0 && context.dataset.usKeys &&
+									context.dataset.usKeys[context.dataIndex]
+									? context.dataset.usKeys[context.dataIndex]
+									: '';
+							}
+						}
+					};
+				}
+				self.chartData.datasets.push(dataset);
+			},
+			enumerable: false
+		},
+		drawUSCompleted: {
+            value: function(data)
+            {
+                var self = this;
+                var userStoriesColor = "#fdb13e83";
+
+                var dataset =
+                {
+                    label: "% US Completed",
+                    data: data,
+                    backgroundColor: userStoriesColor,
+                    borderColor: userStoriesColor,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    borderWidth: 0,
+                    fill: true,
+                    tension: 0,
+                    spanGaps: true,
+                    yAxisID: 'y2',
+                    order: 1,
+                    hidden: false,
+                    datalabels: {
+                        display: false
+                    }
+                };
+
+                self.chartData.datasets.push(dataset);
+            },
+            enumerable: false
+        },
+	});
     views.BurndownView = BurndownView;
 })(viewer.views);

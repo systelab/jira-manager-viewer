@@ -127,6 +127,20 @@ viewer.listeners = viewer.listeners || {};
             },
             enumerable: false
         },
+        getBurndownEngineHelper : {
+            value: function()
+            {
+                return new viewer.helpers.BurndownEngineHelper();
+            },
+            enumerable: false
+        },
+        getBurndownModel : {
+            value: function()
+            {
+                return new viewer.models.BurndownModel();
+            },
+            enumerable: false
+        },
         getPlanningPresenter : {
             value: function()
             {

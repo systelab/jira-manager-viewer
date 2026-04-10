@@ -5,8 +5,10 @@
         this.interactor = Context.getBurndownInteractor();
         this.interactorSettings = Context.getSettingsInteractor();
         this.interactorBoard = Context.getBoardInteractor();
-       
+        this.engine = Context.getBurndownEngineHelper();
         this.view = Context.getBurndownView(this);
+        this.model = Context.getBurndownModel();
+        this.config = null;
         this.view.init();
     }
 
@@ -20,6 +22,7 @@
                 this.interactorSettings.load(new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
+                        self.model.onSettingsLoaded(data);
                         self.view.onLoadSettings(data);
                     },
                     function(data)
@@ -30,14 +33,28 @@
             enumerable: false
         },
         getIssues : {
-            value: function(issues)
+            value: function(issues, workingDays)
             {
                 var self = this;
+
+                self.model.userStories = issues;
+                self.model.burndownConfig.workingDays = workingDays;
+
+                var issuesKeyList = [];
+                $.each(issues, function()
+                {
+                    issuesKeyList.push(this.key);
+                });
                     
-                this.interactor.getIssues(issues, new viewer.listeners.BaseDecisionListener(
+                this.interactor.getIssues(issuesKeyList, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
-                        self.view.onSubtasks(data);
+                        self.engine.computeAll(data, self.model);
+                        self.view.onBurndownComputed(self.model.dataSets, self.model.burndownConfig);
+                        if (self.model.dataSetsEstimates)
+                        {
+                            self.view.onEstimateComputed(self.model.dataSetsEstimates);
+                        }
                     },
                     function(data)
                     {
@@ -54,7 +71,7 @@
                 this.interactorBoard.getSprint(id, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
-                        self.view.onSprint(data);
+                        self.model.onSprint(data);
                     },
                     function(data)
                     {
@@ -105,6 +122,7 @@
                 this.interactor.load(board, sprint, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
+                        self.model.onLoad(data);
                         self.view.onLoad(data);
                     },
                     function(data)
@@ -120,10 +138,23 @@
 				this.interactor.load(board, sprint, new viewer.listeners.BaseDecisionListener(
 				function(data)
 				{
+                    self.model.onSave(values);
+
+                    values.dataSets = self.model.dataSets;
+                    
 					self.interactor.save(board, sprint, values, new viewer.listeners.BaseDecisionListener(
                     function(data)
                     {
-                        self.view.onSave(data);
+                        self.engine.computeEstimates(self.model);
+
+                        if (self.model.dataSetsEstimates)
+                        {
+                            self.view.onEstimateComputed(self.model.dataSetsEstimates);
+                        }
+                        else
+                        {
+                            self.view.showError({error: "Estimate dataset could not be computed"});
+                        }
                     },
                     function(data)
                     {
@@ -135,9 +166,7 @@
 					self.view.showError(data);
 				}));
 				
-                var self = this;
-                    
-                
+                var self = this;                
             },
             enumerable: false
         }
