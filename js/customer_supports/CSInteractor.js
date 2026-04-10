@@ -1,25 +1,23 @@
 (function(interactors)
 {
-    function AnalysisInteractor()
+    function CSInteractor()
     {
         
     }
 
-    Object.defineProperties(AnalysisInteractor.prototype,
+    Object.defineProperties(CSInteractor.prototype,
     {
-        getIssue : {
-            value: function(key, listener)
-            {
-                var base = credentials.server + "/rest/api/3/issue/";
-                var query = key + "?fields=subtasks";
-                var url = base + query;
-
+        getCSBoardIssues : {
+            value: function(board, listener)
+            {                
+                var base = credentials.server + "/rest/agile/1.0/board/" + board;
+                var options = "&fields=assignee,status,summary,worklog&expand=changelog";
 				$.ajax
 				({
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: url,
+					url: base + "/issue?maxResults=1000" + options,
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
@@ -30,7 +28,7 @@
 					},
 					error: function (jqxhr, textStatus, error)
 					{
-                        if(textStatus != "abort")
+						if(textStatus != "abort")
                         {
                             listener.onError(jqxhr.responseJSON);
                         }
@@ -89,5 +87,5 @@
         }
     });
 
-    interactors.AnalysisInteractor = AnalysisInteractor;
+    interactors.CSInteractor = CSInteractor;
 })(viewer.interactors);

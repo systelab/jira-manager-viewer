@@ -224,6 +224,11 @@
     flex-grow: 1.5;
 }
 
+.analysis-table .col-sep {
+    border-left: 2px solid #5e5e5e !important;
+    padding-left: 12px !important;
+}
+
 .analysis-table .artist-name
 {
     -webkit-flex-grow: 7;

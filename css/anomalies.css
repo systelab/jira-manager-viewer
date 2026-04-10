@@ -1,0 +1,148 @@
+.playlist-page {
+  padding: 24px;
+  background: #f7f8fa;
+}
+
+.page-title {
+  margin: 0 0 16px;
+  margin-left: 12px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #4f5357;
+}
+
+/* Table container */
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.table--compact .table__cell {
+  padding: 10px 12px;
+}
+
+.table__head {
+  background: #f5f6f8;
+}
+.table__head .table__cell {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2f3133;
+  text-transform: uppercase;
+  border-bottom: 1px solid #EBECF0;
+  letter-spacing: .02em;
+  text-align: left;
+}
+
+.table__head .table__cell.summary {
+  text-align: center;
+}
+
+/* Rows */
+.table__row {
+  transition: background-color .15s ease, transform .08s ease;
+}
+.table__row:hover {
+  background: #f9fbff;
+}
+.table__row:hover .table__cell {
+  border-color: #e6eefc;
+}
+
+/* Cells */
+.table__cell {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef0f3;
+  color: #2f3133;
+  vertical-align: middle;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+/* Striped rows */
+.table--striped tbody .table__row:nth-child(odd) .table__cell {
+  background: #fcfdff;
+}
+
+/* First and last columns rounding */
+#anomalies-table .table__row:first-child .table__cell {
+  border-top: 0;
+}
+#anomalies-table .table__row .table__cell:first-child {
+  padding-left: 16px;
+}
+#anomalies-table .table__row .table__cell:last-child {
+  padding-right: 16px;
+}
+
+/* Column-specific styles */
+.table__cell.key {
+  width: 10%;
+  color: #6b6f76;
+}
+.table__cell.summary {
+  width: 40%;
+  max-width: 40%;
+  font-weight: 500;
+}
+.table__cell.date {
+  width: 16%;
+  color: #4a4d52;
+}
+.table__cell.input {
+  width: 14%;
+  font-weight: 600;
+  color: #2f3133;
+}
+.table__cell.input.input--warn  { color: #af9520; }
+.table__cell.input.input--error {
+  color: #a42323;
+  font-weight: 700;
+}
+.table__cell.author {
+  width: 20%;
+  color: #44474b;
+}
+
+.table__row.no-data .table__cell {
+  text-align: center;
+  padding: 16px;
+  color: #6b6f76;
+  font-style: italic;
+  background: #fafbfc;
+}
+
+#anomalies-table .table__cell {
+  border-left: none;
+  border-right: none;
+}
+
+.mean-container .mean > figcaption .hours {
+  color: #2f3133;
+}
+
+/* Column widths */
+#anomalies-table thead .table__cell:nth-child(1),
+#anomalies-table tbody .table__cell:nth-child(1) { width: 10%; }
+
+#anomalies-table thead .table__cell:nth-child(2),
+#anomalies-table tbody .table__cell:nth-child(2) { width: 40%; max-width: 40%; }
+
+#anomalies-table thead .table__cell:nth-child(3),
+#anomalies-table tbody .table__cell:nth-child(3) { width: 16%; }
+
+#anomalies-table thead .table__cell:nth-child(4),
+#anomalies-table tbody .table__cell:nth-child(4) { width: 14%; }
+
+#anomalies-table thead .table__cell:nth-child(5),
+#anomalies-table tbody .table__cell:nth-child(5) { width: 20%; }
+
+.table { table-layout: fixed; }

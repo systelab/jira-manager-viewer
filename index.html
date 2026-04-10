@@ -21,8 +21,10 @@
         <link rel="stylesheet" href="css/new-task.css">
         <link rel="stylesheet" href="css/setup.css">
         <link rel="stylesheet" href="css/offsprint.css">
+        <link rel="stylesheet" href="css/anomalies.css">
         <link rel="stylesheet" href="css/worklog.css">
         <link rel="stylesheet" href="css/analysis.css">
+        <link rel="stylesheet" href="css/customer_supports.css">
         <link rel="stylesheet" href="css/burndown.css">
         <script src="lib/jquery/jquery.min.js"></script>
 		<script src="lib/jquery/jquery-ui.min.js"></script>
@@ -53,6 +55,8 @@
         <script src="js/burndown/BurndownView.js"></script>
         <script src="js/burndown/BurndownInteractor.js"></script>
         <script src="js/burndown/BurndownPresenter.js"></script>
+        <script src="js/burndown/BurndownEngineHelper.js"></script>
+        <script src="js/burndown/BurndownModel.js"></script>
         <script src="js/planning/PlanningView.js"></script>
         <script src="js/planning/PlanningInteractor.js"></script>
         <script src="js/planning/PlanningPresenter.js"></script>
@@ -68,9 +72,15 @@
 		<script src="js/analysis/AnalysisView.js"></script>
         <script src="js/analysis/AnalysisInteractor.js"></script>
         <script src="js/analysis/AnalysisPresenter.js"></script>
+		<script src="js/customer_supports/CSView.js"></script>
+        <script src="js/customer_supports/CSInteractor.js"></script>
+        <script src="js/customer_supports/CSPresenter.js"></script>
 		<script src="js/release_notes/ReleaseNotesView.js"></script>
         <script src="js/release_notes/ReleaseNotesInteractor.js"></script>
         <script src="js/release_notes/ReleaseNotesPresenter.js"></script>
+        <script src="js/anomalies/AnomaliesView.js"></script>
+        <script src="js/anomalies/AnomaliesInteractor.js"></script>
+        <script src="js/anomalies/AnomaliesPresenter.js"></script>
         <title>Jira Manager</title>
     </head>
     <body>
@@ -177,6 +187,8 @@
         initializeConfig.push("worklog");
         initializeConfig.push("analysis");
         initializeConfig.push("release_notes");
+        initializeConfig.push("customer_supports");
+        initializeConfig.push("anomalies");
         
         (function()
         {

@@ -198,18 +198,28 @@
 					total.html(this.formatSeconds(total.attr("data-seconds")));
 				}
 				
+					if (data.fields.summary === "Standup")
+					console.log("---" + data.fields.summary + " : " + timespent + "h");
 				{
 					const chartdata = this.peopleChart.data;
 					
 					var self = this;
 					
+					var logTime = 0;
+					var logTimeSeconds = 0;
 					$.each(data.fields.worklog.worklogs, function()
 					{
 						var id = this.author.accountId;
 						var author = this.author.displayName;
 						var timespent = this.timeSpentSeconds / 60 / 60;
-						
-						var element = $("#hoursPeople > tbody").find("tr#" + id);
+						if (data.fields.summary === "Standup")
+							console.log("worklog - " + author + " : " + this.timeSpentSeconds / 60 + "m");
+							// console.log("------" + this.timeSpentSeconds + "seconds");
+
+						logTimeSeconds += this.timeSpentSeconds;
+						logTime += timespent;
+						// var element = $("#hoursPeople > tbody").find("tr#" + id);
+						var element = $("#hoursPeople > tbody").find('tr[id="' + id + '"]');
 						
 						var labelIndex = -1;
 					
@@ -256,6 +266,12 @@
 						
 						total.html(self.formatSeconds(total.attr("data-seconds")));
 					});
+
+					if (data.fields.summary === "Standup")
+					console.log("-------" + logTime + "h");
+					if (data.fields.summary === "Standup")
+					console.log("-------" + logTimeSeconds + " total seconds");
+
 				}
             },
             enumerable: false

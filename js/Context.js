@@ -127,6 +127,20 @@ viewer.listeners = viewer.listeners || {};
             },
             enumerable: false
         },
+        getBurndownEngineHelper : {
+            value: function()
+            {
+                return new viewer.helpers.BurndownEngineHelper();
+            },
+            enumerable: false
+        },
+        getBurndownModel : {
+            value: function()
+            {
+                return new viewer.models.BurndownModel();
+            },
+            enumerable: false
+        },
         getPlanningPresenter : {
             value: function()
             {
@@ -252,6 +266,48 @@ viewer.listeners = viewer.listeners || {};
                 return new viewer.interactors.ReleaseNotesInteractor();
             },
             enumerable: false
+        },
+        getCSPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.CSPresenter(this);
+            },
+            enumerable: false
+        },
+        getCSView : {
+            value: function(presenter)
+            {
+                return new viewer.views.CSView(presenter);
+            },
+            enumerable: false
+        },
+        getCSInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.CSInteractor();
+            },
+            enumerable: false
+        },
+        getAnomaliesPresenter : {
+            value: function()
+            {
+                return new viewer.presenters.AnomaliesPresenter(this);
+            },
+            enumerable: false
+        },
+        getAnomaliesView : {
+            value: function(presenter)
+            {
+                return new viewer.views.AnomaliesView(presenter);
+            },
+            enumerable: false
+        },
+        getAnomaliesInteractor : {
+            value: function()
+            {
+                return new viewer.interactors.AnomaliesInteractor();
+            },
+            enumerable: false
         }
     });
 
@@ -272,6 +328,8 @@ viewer.listeners = viewer.listeners || {};
                     worklog: "getWorklogPresenter",
                     analysis: "getAnalysisPresenter",
                     release_notes: "getReleaseNotesPresenter",
+                    customer_supports: "getCSPresenter",
+                    anomalies: "getAnomaliesPresenter"
                 };
 
     function Initializer()

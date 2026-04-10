@@ -8,39 +8,50 @@
     Object.defineProperties(BurndownInteractor.prototype,
     {
         getIssues : {
-            value: function(issues, listener, startAt = 0)
+            value: function(issues, listener, nextPageToken = null, accumulated = [])
             {
                 var self = this;
+
+                var base = credentials.server + "/rest/api/3/search/jql?";
+                var query = "jql=parent in (" + issues.toString() + ")+order+by+updated";
+                var options = "&fields=assignee,status,parent,summary,issuetype,worklog,timetracking&expand=changelog";
+                var url = base + query + options;
                 
-                var pagination = 1000;
-                
-                $.ajax
-				({
-					type: "GET",
+                if (nextPageToken)
+                {
+                    url += "&nextPageToken=" + nextPageToken;
+                }
+
+                $.ajax({
+                    type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/api/2/search/?jql=parent in (" + issues.toString() + ")+order+by+updated&fields=assignee,status,parent,summary,issuetype,timetracking&maxResults=" + pagination + "&startAt=" + startAt+"&expand=changelog",
-                    beforeSend: function(xhr) { 
-						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
+                    url: url,
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
-					},
-					success: function (json)
-					{
-                        listener.onSuccess(json);
-                        
-                        if(json.startAt + pagination <= json.total)
+                    },
+                    success: function (json)
+                    {
+                        accumulated = accumulated.concat(json.issues);
+
+                        if (!json.isLast && json.nextPageToken) 
                         {
-                            self.getIssues(issues, listener, json.startAt + pagination);
+                            self.getIssues(issues, listener, json.nextPageToken, accumulated);
                         }
-					},
-					error: function (jqxhr, textStatus, error)
-					{
-						if(textStatus != "abort")
+                        else
                         {
+                            json.issues = accumulated;
+                            listener.onSuccess(json);
+                        }
+                    },
+                    error: function (jqxhr, textStatus)
+                    {
+                        if (textStatus !== "abort") {
                             listener.onError(jqxhr.responseJSON);
                         }
-					}
-				});
+                    }
+                });
             },
             enumerable: false
         },
@@ -53,7 +64,7 @@
 					type: "GET",
                     dataType: 'json',
                     contentType: 'application/json',
-					url: credentials.server + "/rest/api/2/user/assignable/search?issueKey=" + issue,
+					url: credentials.server + "/rest/api/3/user/assignable/search?issueKey=" + issue,
                     beforeSend: function(xhr) { 
 						xhr.setRequestHeader("Authorization", "Basic " + credentials.token);
                         $.xhrPool.push(xhr);
